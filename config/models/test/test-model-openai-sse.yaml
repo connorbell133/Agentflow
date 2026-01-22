@@ -1,0 +1,42 @@
+# OpenAI SSE Stream Test Model
+# This model configuration is for testing OpenAI's streaming API
+# Use this to connect to OpenAI GPT models with Server-Sent Events (SSE)
+
+name: "OpenAI GPT-4"
+description: "OpenAI GPT-4 with streaming via SSE"
+endpoint: "https://api.openai.com/v1/chat/completions"
+method: "POST"
+
+# AI SDK 6: Set endpoint type to sse for Server-Sent Events conversion
+endpoint_type: "sse"
+
+# Headers for OpenAI authentication
+headers:
+  Content-Type: "application/json"
+  Authorization: "Bearer ${OPENAI_API_KEY}"  # Replace with your OpenAI API key or use environment variable
+
+# Body configuration for OpenAI API
+# The {{messages}} placeholder will be replaced with conversation messages in OpenAI format
+body_config:
+  model: "gpt-4"
+  messages: "{{messages}}"
+  stream: true
+  temperature: 0.7
+  max_tokens: 2000
+
+# AI SDK 6: SSE stream configuration
+# Tells the router how to extract content from OpenAI's SSE events
+stream_config:
+  # Path to extract content deltas from each SSE event
+  # OpenAI sends: data: {"choices":[{"delta":{"content":"text"}}]}
+  contentPath: "choices.0.delta.content"
+
+  # Path to detect when stream is complete
+  # OpenAI sends: {"choices":[{"finish_reason":"stop"}]}
+  doneSignal: "choices.0.finish_reason"
+
+# No response_path needed for SSE endpoints - stream_config handles it
+# No message_format needed for SSE endpoints - conversion is automatic
+
+# Note: Make sure your OpenAI API key has access to GPT-4
+# If not, change the model to "gpt-3.5-turbo" or "gpt-4o-mini"

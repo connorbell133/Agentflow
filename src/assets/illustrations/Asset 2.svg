@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 187">
+  <defs>
+    <style>
+      .cls-1 {
+        stroke-width: 5px;
+      }
+
+      .cls-1, .cls-2 {
+        fill: none;
+        stroke: #fff;
+      }
+
+      .cls-1, .cls-2, .cls-3 {
+        stroke-miterlimit: 10;
+      }
+
+      .cls-2 {
+        stroke-width: 6px;
+      }
+
+      .cls-4 {
+        fill: #e4e6e2;
+      }
+
+      .cls-3 {
+        fill: #fff;
+        stroke: currentColor;
+        stroke-width: 4px;
+      }
+
+      .cls-5 {
+        fill: currentColor;
+      }
+    </style>
+  </defs>
+  <g id="Logo_5" data-name="Logo 5">
+    <g id="Background">
+      <circle class="cls-4" cx="93.76" cy="170.76" r="12.76"/>
+      <circle class="cls-4" cx="172.17" cy="93.07" r="12.76"/>
+      <circle class="cls-4" cx="16.17" cy="93.07" r="12.76"/>
+      <circle class="cls-2" cx="93.5" cy="93.5" r="81.5"/>
+      <circle class="cls-2" cx="92.39" cy="95.28" r="67.28"/>
+      <circle class="cls-3" cx="15.17" cy="93.07" r="12.76"/>
+      <circle class="cls-3" cx="31.92" cy="40.47" r="8.47"/>
+      <circle class="cls-3" cx="31.63" cy="150.18" r="8.47"/>
+      <circle class="cls-3" cx="155.63" cy="150.18" r="8.47"/>
+      <circle class="cls-3" cx="155.63" cy="40.18" r="8.47"/>
+      <line class="cls-1" x1="15.5" y1="93.5" x2="174.5" y2="93.5"/>
+      <line class="cls-1" x1="94.5" y1="172.5" x2="94.5" y2="15.5"/>
+      <circle class="cls-3" cx="174.17" cy="93.07" r="12.76"/>
+      <ellipse class="cls-2" cx="95" cy="95.5" rx="39.5" ry="67"/>
+      <circle class="cls-3" cx="94.17" cy="15.07" r="12.76"/>
+      <circle class="cls-3" cx="94.17" cy="172.07" r="12.76"/>
+      <path class="cls-2" d="M137,46c-8.96,4.79-23.7,10.93-42,11-8.09.03-14.7-1.14-18.3-1.9-12.38-2.63-21.77-7.46-27.7-11.1"/>
+      <path class="cls-2" d="M136.74,146.58c-8.96-4.79-23.7-10.93-42-11-8.09-.03-14.7,1.14-18.3,1.9-12.38,2.63-21.77,7.46-27.7,11.1"/>
+    </g>
+  </g>
+</svg>

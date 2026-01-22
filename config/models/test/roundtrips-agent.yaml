@@ -1,0 +1,34 @@
+# AI SDK Roundtrips Agent Configuration
+# This configuration connects to your local AI SDK roundtrips example
+# running on port 3001 with package tracking capabilities
+
+name: "AI SDK Roundtrips Agent"
+description: "Package tracking assistant with tool support via AI SDK 6"
+endpoint: "http://localhost:3001/api/chat"
+method: "POST"
+
+# AI SDK 6: Use ai-sdk-stream for direct pass-through
+endpoint_type: "ai-sdk-stream"
+
+# Headers for the request
+headers:
+  Content-Type: "application/json"
+
+# Body configuration - sent to your AI SDK endpoint
+# The {{messages}} placeholder contains conversation history
+body_config:
+  messages: "{{messages}}"
+
+# Important Notes:
+# - Your endpoint should return AI SDK UIMessage stream format
+# - The endpoint should set header: x-vercel-ai-ui-message-stream: true
+# - Tool calls (listOrders, viewTrackingInformation) are handled automatically
+# - No response_path or message_format needed for ai-sdk-stream type
+
+# Example conversation starters:
+suggestion_prompts:
+  - "Show me all my orders"
+  - "Where is my package?"
+  - "Track order #12345"
+  - "What's the status of my recent orders?"
+  - "Get tracking information for my latest order"

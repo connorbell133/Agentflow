@@ -1,0 +1,58 @@
+name: "n8n Workflow Automation"
+model_id: "n8n-workflow-executor"
+description: "Execute n8n workflows via webhook triggers for automated task processing"
+endpoint: "https://your-n8n-instance.com/webhook/{{workflow_id}}"
+method: "POST"
+
+headers:
+  n8n-api-key: ""
+  Content-Type: "application/json"
+  User-Agent: "ChatPlatform/1.0"
+
+request_schema:
+  workflow_id: "{{workflow_id}}"
+  trigger_data:
+    message: "{{message}}"
+    user_id: "{{user_id}}"
+    timestamp: "{{timestamp}}"
+  execution_mode: "trigger"
+  wait_for_completion: true
+  timeout: 300
+
+response_path: "data.execution_result"
+
+message_format:
+  mapping:
+    role:
+      source: "role"
+      target: "trigger_data.user_role"
+      transform: "lowercase"
+    content:
+      source: "content"
+      target: "trigger_data.message_content"
+      transform: "none"
+    timestamp:
+      source: "timestamp"
+      target: "trigger_data.timestamp"
+      transform: "iso8601"
+  customFields:
+    - name: "workflow_metadata"
+      value:
+        platform: "n8n"
+        version: "1.0"
+        execution_type: "webhook"
+      type: "object"
+    - name: "retry_config"
+      value:
+        max_retries: 3
+        retry_delay: 1000
+        exponential_backoff: true
+      type: "object"
+
+suggestion_prompts:
+  - "Create a workflow to process customer support tickets"
+  - "Set up automated data synchronization between systems"
+  - "Build a workflow for invoice processing and approval"
+  - "Create an automated lead scoring workflow"
+  - "Set up a workflow for social media content scheduling"
+

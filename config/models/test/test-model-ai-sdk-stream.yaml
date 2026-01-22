@@ -1,0 +1,33 @@
+# AI SDK 6 Stream Test Model
+# This model configuration is for testing AI SDK 6 endpoints that already return UIMessage streams
+# Use this when connecting to another Next.js app or service that uses AI SDK 6
+
+name: "AI SDK Test Model"
+description: "Test model for AI SDK 6 stream pass-through"
+endpoint: "https://your-ai-sdk-app.vercel.app/api/chat"
+method: "POST"
+
+# AI SDK 6: Set endpoint type to ai-sdk-stream for pass-through mode
+endpoint_type: "ai-sdk-stream"
+
+# Headers for authentication (if needed)
+headers:
+  Content-Type: "application/json"
+  # Add your auth header if needed:
+  # Authorization: "Bearer YOUR_API_KEY"
+
+# Body configuration - this is sent to your AI SDK endpoint
+# The {{messages}} placeholder will be replaced with the conversation messages
+body_config:
+  messages: "{{messages}}"
+  # You can add other fields your endpoint expects:
+  # model: "gpt-4"
+  # temperature: 0.7
+
+# No stream_config needed - AI SDK endpoints already return the correct format
+# No response_path needed - pass-through mode doesn't convert
+# No message_format needed - AI SDK handles message formatting
+
+# Note: This endpoint type expects the response to have the header:
+# x-vercel-ai-ui-message-stream: true
+# If your endpoint doesn't set this, it won't work in pass-through mode

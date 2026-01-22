@@ -1,0 +1,65 @@
+name: "Anthropic Claude Integration"
+model_id: "anthropic-claude"
+description: "Integration with Anthropic Claude for advanced AI reasoning and analysis"
+endpoint: "https://api.anthropic.com/v1/messages"
+method: "POST"
+
+headers:
+  x-api-key: "{{anthropic_api_key}}"
+  Content-Type: "application/json"
+  Anthropic-Version: "2023-06-01"
+
+request_schema:
+  model: "claude-3-5-sonnet-20241022"
+  max_tokens: 4000
+  temperature: 0.7
+  top_p: 1
+  top_k: 40
+  stop_sequences: []
+  system: "{{system_prompt}}"
+  messages:
+    - role: "user"
+      content: "{{user_message}}"
+  metadata:
+    user_id: "{{user_id}}"
+    session_id: "{{session_id}}"
+
+response_path: "content[0].text"
+
+message_format:
+  mapping:
+    role:
+      source: "role"
+      target: "messages[{{message_index}}].role"
+      transform: "anthropic_role"
+    content:
+      source: "content"
+      target: "messages[{{message_index}}].content"
+      transform: "none"
+    timestamp:
+      source: "timestamp"
+      target: "metadata.timestamp"
+      transform: "iso8601"
+  customFields:
+    - name: "claude_configuration"
+      value:
+        platform: "anthropic"
+        model: "claude-3-5-sonnet-20241022"
+        version: "2023-06-01"
+        capabilities: ["reasoning", "analysis", "writing", "coding"]
+      type: "object"
+    - name: "generation_parameters"
+      value:
+        max_tokens: 4000
+        temperature: 0.7
+        top_p: 1
+        top_k: 40
+        stop_sequences: []
+      type: "object"
+
+suggestion_prompts:
+  - "Analyze complex business problems and provide strategic solutions"
+  - "Generate high-quality written content for various purposes"
+  - "Review and improve existing code or documentation"
+  - "Conduct thorough research on specific topics"
+  - "Create detailed project plans and technical specifications"

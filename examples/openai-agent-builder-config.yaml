@@ -1,0 +1,66 @@
+name: "OpenAI Agent Builder"
+model_id: "openai-agent-builder"
+description: "Execute OpenAI Agent Builder agents for intelligent task automation and decision making"
+endpoint: "https://api.openai.com/v1/assistants/{{assistant_id}}/runs"
+method: "POST"
+
+headers:
+  Authorization: "Bearer {{openai_api_key}}"
+  Content-Type: "application/json"
+  OpenAI-Beta: "assistants=v2"
+
+request_schema:
+  assistant_id: "{{assistant_id}}"
+  thread_id: "{{thread_id}}"
+  instructions: "{{instructions}}"
+  additional_instructions: "{{additional_instructions}}"
+  tools:
+    - type: "code_interpreter"
+    - type: "file_search"
+    - type: "function"
+      function:
+        name: "custom_function"
+        description: "Custom function for specific tasks"
+  metadata:
+    user_id: "{{user_id}}"
+    session_id: "{{session_id}}"
+    timestamp: "{{timestamp}}"
+
+response_path: "data.run_result"
+
+message_format:
+  mapping:
+    role:
+      source: "role"
+      target: "messages[0].role"
+      transform: "openai_role"
+    content:
+      source: "content"
+      target: "messages[0].content"
+      transform: "none"
+    timestamp:
+      source: "timestamp"
+      target: "metadata.timestamp"
+      transform: "iso8601"
+  customFields:
+    - name: "agent_configuration"
+      value:
+        platform: "openai"
+        model: "gpt-4-turbo"
+        version: "assistants-v2"
+        capabilities: ["code_interpreter", "file_search", "function_calling"]
+      type: "object"
+    - name: "execution_settings"
+      value:
+        max_completion_tokens: 4000
+        temperature: 0.7
+        timeout: 300
+        stream: false
+      type: "object"
+
+suggestion_prompts:
+  - "Create an agent to analyze customer feedback and generate insights"
+  - "Build an agent for automated code review and suggestions"
+  - "Set up an agent for data analysis and report generation"
+  - "Create an agent for content moderation and classification"
+  - "Build an agent for automated customer support responses"

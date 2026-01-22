@@ -1,0 +1,66 @@
+name: "Make.com Scenario Automation"
+model_id: "make-scenario-executor"
+description: "Execute Make.com scenarios via webhook triggers for automated workflow processing"
+endpoint: "https://hook.eu1.make.com/{{scenario_id}}"
+method: "POST"
+
+headers:
+  make-api-key:
+  Content-Type: "application/json"
+  User-Agent: "ChatPlatform/1.0"
+
+request_schema:
+  scenario_id: "{{scenario_id}}"
+  webhook_data:
+    message: "{{message}}"
+    user_id: "{{user_id}}"
+    timestamp: "{{timestamp}}"
+    context: "{{context}}"
+  execution_settings:
+    mode: "webhook"
+    wait_for_completion: true
+    timeout: 600
+    retry_on_failure: true
+
+response_path: "data.scenario_result"
+
+message_format:
+  mapping:
+    role:
+      source: "role"
+      target: "webhook_data.user_role"
+      transform: "lowercase"
+    content:
+      source: "content"
+      target: "webhook_data.message_content"
+      transform: "none"
+    timestamp:
+      source: "timestamp"
+      target: "webhook_data.timestamp"
+      transform: "iso8601"
+    context:
+      source: "context"
+      target: "webhook_data.additional_context"
+      transform: "json_stringify"
+  customFields:
+    - name: "scenario_metadata"
+      value:
+        platform: "make.com"
+        version: "2.0"
+        execution_type: "webhook"
+        region: "eu1"
+      type: "object"
+    - name: "error_handling"
+      value:
+        max_retries: 5
+        retry_delay: 2000
+        exponential_backoff: true
+        fallback_action: "notify_admin"
+      type: "object"
+
+suggestion_prompts:
+  - "Create a scenario to sync customer data between CRM and email marketing"
+  - "Set up automated lead qualification and routing"
+  - "Build a scenario for invoice generation and payment tracking"
+  - "Create an automated social media posting workflow"
+  - "Set up a scenario for order fulfillment and shipping notifications"

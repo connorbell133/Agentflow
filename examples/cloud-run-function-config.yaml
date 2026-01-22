@@ -1,0 +1,73 @@
+name: "Google Cloud Run Function"
+model_id: "cloud-run-function-executor"
+description: "Execute Google Cloud Run functions for serverless AI processing and automation"
+endpoint: "https://{{function_name}}-{{project_id}}.{{region}}.run.app/{{endpoint_path}}"
+method: "POST"
+
+headers:
+  Authorization: "Bearer {{cloud_run_token}}"
+  Content-Type: "application/json"
+  User-Agent: "ChatPlatform/1.0"
+
+request_schema:
+  function_name: "{{function_name}}"
+  project_id: "{{project_id}}"
+  region: "{{region}}"
+  endpoint_path: "{{endpoint_path}}"
+  payload:
+    message: "{{message}}"
+    user_id: "{{user_id}}"
+    timestamp: "{{timestamp}}"
+    context: "{{context}}"
+  execution_config:
+    timeout: 300
+    memory: "1Gi"
+    cpu: "1"
+    concurrency: 100
+    max_instances: 10
+
+response_path: "data.result"
+
+message_format:
+  mapping:
+    role:
+      source: "role"
+      target: "payload.user_role"
+      transform: "lowercase"
+    content:
+      source: "content"
+      target: "payload.message_content"
+      transform: "none"
+    timestamp:
+      source: "timestamp"
+      target: "payload.timestamp"
+      transform: "iso8601"
+    context:
+      source: "context"
+      target: "payload.additional_context"
+      transform: "json_stringify"
+  customFields:
+    - name: "cloud_run_metadata"
+      value:
+        platform: "google_cloud_run"
+        version: "2.0"
+        execution_type: "serverless"
+        region: "{{region}}"
+        project: "{{project_id}}"
+      type: "object"
+    - name: "function_configuration"
+      value:
+        timeout: 300
+        memory: "1Gi"
+        cpu: "1"
+        concurrency: 100
+        max_instances: 10
+        min_instances: 0
+      type: "object"
+
+suggestion_prompts:
+  - "Create a Cloud Run function for real-time image processing and analysis"
+  - "Set up a function for automated document parsing and data extraction"
+  - "Build a function for real-time language translation services"
+  - "Create a function for automated email processing and routing"
+  - "Set up a function for real-time data validation and transformation"

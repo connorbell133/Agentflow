@@ -1,0 +1,77 @@
+name: "Hosted LangChain Agent"
+model_id: "langchain-agent-executor"
+description: "Execute hosted LangChain agents for complex AI workflows and tool usage"
+endpoint: "https://api.langchain.com/v1/agents/{{agent_id}}/invoke"
+method: "POST"
+
+headers:
+  Authorization: "Bearer {{langchain_api_key}}"
+  Content-Type: "application/json"
+  X-LangChain-Version: "0.1.0"
+
+request_schema:
+  agent_id: "{{agent_id}}"
+  input:
+    message: "{{message}}"
+    user_id: "{{user_id}}"
+    session_id: "{{session_id}}"
+    timestamp: "{{timestamp}}"
+  config:
+    callbacks: []
+    tags: ["chat-platform"]
+    metadata:
+      user_id: "{{user_id}}"
+      session_id: "{{session_id}}"
+  tools:
+    - name: "web_search"
+      description: "Search the web for current information"
+    - name: "calculator"
+      description: "Perform mathematical calculations"
+    - name: "code_executor"
+      description: "Execute code snippets"
+  memory:
+    type: "conversation_buffer"
+    max_token_limit: 2000
+
+response_path: "data.output"
+
+message_format:
+  mapping:
+    role:
+      source: "role"
+      target: "input.role"
+      transform: "lowercase"
+    content:
+      source: "content"
+      target: "input.message"
+      transform: "none"
+    timestamp:
+      source: "timestamp"
+      target: "input.timestamp"
+      transform: "iso8601"
+    session_id:
+      source: "session_id"
+      target: "input.session_id"
+      transform: "none"
+  customFields:
+    - name: "langchain_configuration"
+      value:
+        platform: "langchain"
+        version: "0.1.0"
+        agent_type: "conversational"
+        capabilities: ["tool_usage", "memory", "reasoning"]
+      type: "object"
+    - name: "agent_settings"
+      value:
+        max_iterations: 10
+        timeout: 300
+        memory_type: "conversation_buffer"
+        max_token_limit: 2000
+      type: "object"
+
+suggestion_prompts:
+  - "Create an agent that can research topics and provide comprehensive summaries"
+  - "Build an agent for automated data analysis and visualization"
+  - "Set up an agent for code review and optimization suggestions"
+  - "Create an agent for customer support with access to knowledge base"
+  - "Build an agent for automated report generation from multiple data sources"

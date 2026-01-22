@@ -1,0 +1,72 @@
+# CLA Bot Configuration
+# See: https://github.com/cla-assistant/cla-assistant
+
+# Label to apply when CLA is signed
+label: 'cla-signed'
+
+# Comment that contributors can use to sign/re-trigger CLA check
+recheckComment: 'I agree to the CLA'
+
+# Exclude trivial contributions that don't require CLA
+# These are documentation, comments, typos, and config changes
+excludePaths:
+  - '**/*.md'                    # All markdown files
+  - 'docs/**'                    # Documentation directory
+  - '**/.gitignore'              # Gitignore files
+  - '**/.prettierrc*'            # Prettier config
+  - '**/.eslintrc*'              # ESLint config
+  - '**/tsconfig.json'           # TypeScript config
+  - '**/package.json'            # Only if changing scripts/deps minimally
+  - '**/*.txt'                   # Text files
+  - 'LICENSE'                    # License file
+  - 'CONTRIBUTING.md'            # Contributing guide
+  - 'CODE_OF_CONDUCT.md'         # Code of conduct
+  - 'CLA.md'                     # The CLA itself
+
+# Messages displayed by the bot
+message:
+  # Message shown when CLA is not signed
+  notSigned: >
+    👋 Thanks for contributing to AgentFlow!
+
+
+    **Quick legal thing:** We need you to agree to our CLA. **Takes 10 seconds, one-time only.**
+
+
+    📄 [Read the CLA (2 min read)](https://github.com/Agent-Flow-AI/chat_platform/blob/main/CLA.md)
+
+
+    **To sign**, just comment:
+
+    ```
+    I agree to the CLA
+    ```
+
+
+    **Why?** You keep your copyright. This just lets us include your work in both our open-source (AGPL) and commercial versions.
+
+
+    **Future PRs?** Once signed, you're done forever! All future contributions are auto-approved. 🎉
+
+  # Message shown when CLA is signed
+  signed: >
+    ✅ **CLA signed!** You're all set—this applies to all your future contributions too.
+
+
+    Thank you for contributing! 🙌
+
+  # Message shown when CLA status is updated
+  updated: >
+    ✅ **CLA verified.** Thank you!
+
+# Optional: List of GitHub usernames that don't need to sign
+# (useful for bots, CI accounts, or maintainers)
+allowlist:
+  - dependabot
+  - dependabot[bot]
+  - github-actions
+  - github-actions[bot]
+  - renovate
+  - renovate[bot]
+  # Add your maintainer accounts here if needed
+  # - yourusername

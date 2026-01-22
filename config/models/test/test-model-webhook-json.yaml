@@ -1,0 +1,73 @@
+# Webhook JSON Test Model
+# This model configuration is for testing webhook-style JSON endpoints
+# Use this for endpoints that return a complete JSON response (not streaming)
+
+name: "Webhook JSON Test"
+description: "Test model for webhook-style JSON responses (echoes messages)"
+endpoint: "http://localhost:3001/api/test/webhook"
+method: "POST"
+
+# AI SDK 6: Set endpoint type to webhook for non-streaming JSON responses
+endpoint_type: "webhook"
+
+# Headers for the webhook request
+headers:
+  Content-Type: "application/json"
+  # Add your auth header if needed:
+  # Authorization: "Bearer YOUR_API_KEY"
+  # X-API-Key: "YOUR_API_KEY"
+
+# Body configuration - this is sent to your webhook endpoint
+# The {{messages}} placeholder will be replaced with the conversation messages
+body_config:
+  messages: "{{messages}}"
+  # You can add other fields your webhook expects:
+  # user_id: "{{user_id}}"
+  # conversation_id: "{{conversation_id}}"
+  # model: "gpt-4"
+  # temperature: 0.7
+
+# Response path: where to find the AI response in the JSON response
+# For example, if your webhook returns: {"response": "Hello!", "metadata": {...}}
+# Use: "response"
+response_path: "response"
+
+# Alternative response paths for different JSON structures:
+# If response is at: {"data": {"message": "Hello!"}} -> "data.message"
+# If response is at: {"result": {"text": "Hello!"}} -> "result.text"
+# If response is at: {"content": "Hello!"} -> "content"
+# If the entire response is the message -> leave empty or use "."
+
+# Message format: how messages are structured in the request
+message_format:
+  preset: "openai"
+  mapping:
+    role:
+      source: "role"
+      target: "role"
+      transform: "none"
+    content:
+      source: "content"
+      target: "content"
+      transform: "none"
+
+# No stream_config needed - JSON endpoints return complete responses
+# No SSE configuration needed - this is a synchronous JSON response
+
+# Example webhook response formats this can handle:
+# 1. Simple response:
+#    {"response": "Hello, how can I help you?"}
+#
+# 2. Nested response:
+#    {"data": {"message": "Hello!", "tokens": 10}}
+#
+# 3. OpenAI-like response:
+#    {"choices": [{"message": {"content": "Hello!"}}]}
+#    (response_path: "choices.0.message.content")
+#
+# 4. Custom response:
+#    {"result": {"text": "Hello!", "metadata": {}}}
+#    (response_path: "result.text")
+
+# Note: Your webhook endpoint should return a JSON object
+# The response_path tells the router where to find the actual message content

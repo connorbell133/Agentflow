@@ -1,0 +1,67 @@
+name: "Relay Workflow Automation"
+model_id: "relay-workflow-executor"
+description: "Execute Relay workflows for automated business process management"
+endpoint: "https://api.relay.app/v1/workflows/{{workflow_id}}/execute"
+method: "POST"
+
+headers:
+  Authorization: "Bearer {{relay_api_key}}"
+  Content-Type: "application/json"
+  X-Relay-Version: "2024-01"
+
+request_schema:
+  workflow_id: "{{workflow_id}}"
+  trigger_type: "webhook"
+  input_data:
+    message: "{{message}}"
+    user_id: "{{user_id}}"
+    timestamp: "{{timestamp}}"
+    context: "{{context}}"
+  execution_options:
+    async: false
+    timeout: 300
+    retry_policy: "exponential_backoff"
+    max_retries: 3
+
+response_path: "data.execution_result"
+
+message_format:
+  mapping:
+    role:
+      source: "role"
+      target: "input_data.user_role"
+      transform: "lowercase"
+    content:
+      source: "content"
+      target: "input_data.message_content"
+      transform: "none"
+    timestamp:
+      source: "timestamp"
+      target: "input_data.timestamp"
+      transform: "iso8601"
+    context:
+      source: "context"
+      target: "input_data.additional_context"
+      transform: "json_stringify"
+  customFields:
+    - name: "relay_metadata"
+      value:
+        platform: "relay"
+        version: "2024-01"
+        execution_type: "webhook"
+        environment: "production"
+      type: "object"
+    - name: "workflow_settings"
+      value:
+        timeout: 300
+        retry_policy: "exponential_backoff"
+        max_retries: 3
+        async_execution: false
+      type: "object"
+
+suggestion_prompts:
+  - "Create a workflow for automated customer onboarding process"
+  - "Set up a workflow for inventory management and reorder alerts"
+  - "Build a workflow for employee performance review automation"
+  - "Create a workflow for automated invoice processing and approval"
+  - "Set up a workflow for lead scoring and CRM updates"

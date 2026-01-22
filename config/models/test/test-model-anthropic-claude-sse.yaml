@@ -1,0 +1,56 @@
+# Anthropic Claude SSE Stream Test Model
+# This model configuration is for testing Anthropic Claude's streaming API
+# Use this to connect to Anthropic Claude models with Server-Sent Events (SSE)
+
+name: "Anthropic Claude 3.5 Sonnet"
+description: "Anthropic Claude 3.5 Sonnet with streaming via SSE"
+endpoint: "https://api.anthropic.com/v1/messages"
+method: "POST"
+
+# AI SDK 6: Set endpoint type to sse for Server-Sent Events conversion
+endpoint_type: "sse"
+
+# Headers for Anthropic authentication
+headers:
+  Content-Type: "application/json"
+  x-api-key: "YOUR_ANTHROPIC_API_KEY_HERE"
+  anthropic-version: "2023-06-01"
+
+# Body configuration for Anthropic API
+# The {{messages}} placeholder will be replaced with conversation messages
+# Note: Anthropic expects messages in a specific format with role and content
+body_config:
+  model: "claude-3-5-sonnet-20241022"
+  messages: "{{messages}}"
+  stream: true
+  max_tokens: 4096
+  temperature: 0.7
+
+# AI SDK 6: SSE stream configuration
+# Tells the router how to extract content from Anthropic's SSE events
+stream_config:
+  # Path to extract content deltas from each SSE event
+  # Anthropic sends: event: content_block_delta
+  # data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"chunk"}}
+  # The content is nested in delta.text
+  contentPath: "delta.text"
+
+  # Signal to detect when stream is complete
+  # Anthropic sends: event: message_stop when done
+  # Note: The doneSignal is checked as a direct string match against the data line
+  # Since Anthropic doesn't send "[DONE]", we use a value that won't match
+  # The stream will end naturally when the connection closes
+  doneSignal: "[DONE]"
+  
+  # Optional: Path to extract error messages
+  errorPath: "error.message"
+
+# No response_path needed for SSE endpoints - stream_config handles it
+# No message_format needed for SSE endpoints - conversion is automatic
+
+# Note: 
+# 1. Replace YOUR_ANTHROPIC_API_KEY_HERE with your actual Anthropic API key
+# 2. Anthropic API requires messages in format: [{"role": "user", "content": "text"}]
+# 3. The router will automatically convert from OpenAI format to Anthropic format
+# 4. Available models: claude-3-5-sonnet-20241022, claude-3-opus-20240229, claude-3-haiku-20240307
+

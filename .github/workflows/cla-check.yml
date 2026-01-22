@@ -1,0 +1,259 @@
+name: CLA Check (Backup)
+
+# This workflow serves as a backup CLA checker if the CLA Assistant bot is unavailable
+# It checks for "I agree to the CLA" comments and validates CLA signatures
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
+jobs:
+  check-trivial:
+    name: Check if CLA required
+    runs-on: ubuntu-latest
+    outputs:
+      requires_cla: ${{ steps.check.outputs.requires_cla }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if PR modifies only trivial files
+        id: check
+        run: |
+          # Get list of changed files
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          else
+            FILES=$(git diff --name-only HEAD^..HEAD)
+          fi
+
+          echo "Changed files:"
+          echo "$FILES"
+
+          # Patterns that don't require CLA (documentation, configs, comments)
+          TRIVIAL_PATTERNS=(
+            '\.md$'
+            '^docs/'
+            '\.gitignore$'
+            '\.prettierrc'
+            '\.eslintrc'
+            'tsconfig\.json$'
+            '\.txt$'
+            '^LICENSE$'
+            '^CONTRIBUTING\.md$'
+            '^CODE_OF_CONDUCT\.md$'
+            '^CLA\.md$'
+          )
+
+          # Check if ALL files match trivial patterns
+          REQUIRES_CLA=false
+          while IFS= read -r file; do
+            IS_TRIVIAL=false
+            for pattern in "${TRIVIAL_PATTERNS[@]}"; do
+              if echo "$file" | grep -qE "$pattern"; then
+                IS_TRIVIAL=true
+                break
+              fi
+            done
+
+            if [ "$IS_TRIVIAL" = false ]; then
+              REQUIRES_CLA=true
+              echo "Non-trivial file found: $file"
+              break
+            fi
+          done <<< "$FILES"
+
+          if [ "$REQUIRES_CLA" = true ]; then
+            echo "requires_cla=true" >> $GITHUB_OUTPUT
+            echo "✅ CLA required for this PR"
+          else
+            echo "requires_cla=false" >> $GITHUB_OUTPUT
+            echo "✅ CLA not required (documentation/config only)"
+          fi
+
+  check-cla:
+    name: Verify CLA signature
+    runs-on: ubuntu-latest
+    needs: check-trivial
+    if: needs.check-trivial.outputs.requires_cla == 'true' && github.event_name == 'pull_request'
+    steps:
+      - name: Check for existing CLA signature
+        id: check-signature
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const contributor = context.payload.pull_request.user.login;
+
+            // Check if this is a bot or in allowlist
+            const bots = ['dependabot', 'dependabot[bot]', 'github-actions', 'github-actions[bot]', 'renovate', 'renovate[bot]'];
+            if (bots.includes(contributor)) {
+              console.log(`${contributor} is in allowlist, skipping CLA check`);
+              return { signed: true, message: 'Bot account, CLA not required' };
+            }
+
+            // Check PR comments for CLA agreement
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number
+            });
+
+            const claSignatures = [
+              'I agree to the CLA',
+              'I have read the CLA Document and I hereby sign the CLA'
+            ];
+
+            const hasSigned = comments.data.some(comment =>
+              comment.user.login === contributor &&
+              claSignatures.some(sig => comment.body.includes(sig))
+            );
+
+            if (hasSigned) {
+              console.log(`✅ ${contributor} has signed the CLA`);
+              return { signed: true, message: 'CLA signed in PR comments' };
+            }
+
+            // Check if user has signed CLA in a previous PR (stored in a central issue)
+            // This would require maintaining a CLA signatures issue
+            // For now, we'll just check current PR
+
+            console.log(`❌ ${contributor} has not signed the CLA`);
+            return { signed: false, message: 'CLA signature not found' };
+
+      - name: Comment on PR if CLA not signed
+        if: steps.check-signature.outputs.signed == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const message = `👋 Thanks for contributing to AgentFlow!
+
+**Quick legal thing:** We need you to agree to our CLA. **Takes 10 seconds, one-time only.**
+
+📄 [Read the CLA (2 min read)](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/CLA.md)
+
+**To sign**, just comment:
+\`\`\`
+I agree to the CLA
+\`\`\`
+
+**Why?** You keep your copyright. This just lets us include your work in both our open-source (AGPL) and commercial versions.
+
+**Future PRs?** Once signed, you're done forever! All future contributions are auto-approved. 🎉
+
+---
+*This is a backup CLA checker. If you've already signed via the CLA Assistant bot, you can ignore this.*`;
+
+            // Check if we've already commented
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number
+            });
+
+            const botComment = comments.data.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('I agree to the CLA')
+            );
+
+            if (!botComment) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: message
+              });
+            }
+
+      - name: Set status check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const signed = '${{ steps.check-signature.outputs.signed }}' === 'true';
+            const state = signed ? 'success' : 'pending';
+            const description = signed
+              ? '✅ CLA signed'
+              : '⏳ Awaiting CLA signature';
+
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.payload.pull_request.head.sha,
+              state: state,
+              description: description,
+              context: 'CLA Check (Backup)'
+            });
+
+  handle-cla-comment:
+    name: Handle CLA signature comment
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, 'I agree to the CLA')
+    steps:
+      - name: Add reaction to comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: '+1'
+            });
+
+      - name: Add success comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const message = `✅ **CLA signed!** You're all set—this applies to all your future contributions too.
+
+Thank you for contributing! 🙌`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: message
+            });
+
+      - name: Add label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              labels: ['cla-signed']
+            });
+
+      - name: Update status check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get the PR details
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.issue.number
+            });
+
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: pr.data.head.sha,
+              state: 'success',
+              description: '✅ CLA signed',
+              context: 'CLA Check (Backup)'
+            });

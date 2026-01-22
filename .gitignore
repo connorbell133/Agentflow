@@ -1,0 +1,76 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+.claude
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+test-results/
+playwright-report/
+playwright/.auth/
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# webpack cache
+/.next/cache/
+/.next/cache/webpack/
+
+# production
+/build
+
+# misc
+**/.DS_Store
+.DS_Store
+*.pem
+*.swp
+*.swo
+*~
+
+# IDE
+.idea/
+*.sublime-*
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+.env.local
+.env.production
+.env.development
+.env.test
+# Keep .env.example for documentation
+!.env.example
+
+# Migration files (contain sensitive database URLs)
+.env.migration
+.env.migration.temp
+!.env.migration.example
+
+# Database backups (contain sensitive data)
+/db-backups/
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+.env
+google_creds.json
+# clerk configuration (can include secrets)
+/.clerk/
+
+# Sentry Config File
+.env.sentry-build-plugin
+
+# Snaplet (database seeding tool)
+.snaplet/
+seed.config.ts

@@ -1,0 +1,65 @@
+name: "OpenAI GPT-4.1 Chat Completion"
+model_id: "openai-gpt-4.1"
+description: "Direct integration with OpenAI GPT-4.1 for advanced conversational AI capabilities"
+endpoint: "https://api.openai.com/v1/chat/completions"
+method: "POST"
+
+headers:
+  Authorization: "Bearer {{openai_api_key}}"
+  Content-Type: "application/json"
+
+request_schema:
+  model: "gpt-4.1-turbo"
+  messages:
+    - role: "system"
+      content: "{{system_prompt}}"
+    - role: "user"
+      content: "{{user_message}}"
+  temperature: 0.7
+  max_tokens: 4000
+  top_p: 1
+  frequency_penalty: 0
+  presence_penalty: 0
+  stream: false
+  user: "{{user_id}}"
+
+response_path: "choices[0].message.content"
+
+message_format:
+  preset: "openai_chat"
+  mapping:
+    role:
+      source: "role"
+      target: "messages[{{message_index}}].role"
+      transform: "openai_role"
+    content:
+      source: "content"
+      target: "messages[{{message_index}}].content"
+      transform: "none"
+    timestamp:
+      source: "timestamp"
+      target: "metadata.timestamp"
+      transform: "iso8601"
+  customFields:
+    - name: "model_configuration"
+      value:
+        platform: "openai"
+        model: "gpt-4.1-turbo"
+        version: "latest"
+        capabilities: ["text_generation", "reasoning", "code_generation"]
+      type: "object"
+    - name: "generation_settings"
+      value:
+        temperature: 0.7
+        max_tokens: 4000
+        top_p: 1
+        frequency_penalty: 0
+        presence_penalty: 0
+      type: "object"
+
+suggestion_prompts:
+  - "Generate creative marketing copy for a new product launch"
+  - "Analyze complex data and provide strategic recommendations"
+  - "Write technical documentation for API endpoints"
+  - "Create personalized email templates for different customer segments"
+  - "Generate code solutions for specific programming challenges"

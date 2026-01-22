@@ -1,0 +1,10 @@
+<svg width="800" height="800" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="12" cy="3.43" r="1.91" stroke="currentColor" stroke-width="1.91" fill="none" />
+  <path d="M9.14,8.2h0A2.86,2.86,0,0,1,12,5.34h0A2.86,2.86,0,0,1,14.86,8.2h0" stroke="currentColor" stroke-width="1.91" fill="none" />
+  <circle cx="19.64" cy="18.7" r="1.91" stroke="currentColor" stroke-width="1.91" fill="none" />
+  <path d="M16.77,23.48h0a2.87,2.87,0,0,1,2.87-2.87h0a2.87,2.87,0,0,1,2.86,2.87h0" stroke="currentColor" stroke-width="1.91" fill="none" />
+  <circle cx="4.36" cy="18.7" r="1.91" stroke="currentColor" stroke-width="1.91" fill="none" />
+  <path d="M1.5,23.48h0a2.87,2.87,0,0,1,2.86-2.87h0a2.87,2.87,0,0,1,2.87,2.87h0" stroke="currentColor" stroke-width="1.91" fill="none" />
+  <line x1="12" y1="9.16" x2="12" y2="13.93" stroke="currentColor" stroke-width="1.91" />
+  <polyline points="8.18 16.8 12 13.93 15.82 16.8" stroke="currentColor" stroke-width="1.91" fill="none" />
+</svg>
