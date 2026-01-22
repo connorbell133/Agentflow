@@ -37,6 +37,14 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  typescript: {
+    // Only run type checking in the type-check job, not during build
+    ignoreBuildErrors: process.env.CI === 'true',
+  },
+  eslint: {
+    // Only run linting in the lint job, not during build
+    ignoreDuringBuilds: process.env.CI === 'true',
+  },
   async redirects() {
     const redirects = [];
 

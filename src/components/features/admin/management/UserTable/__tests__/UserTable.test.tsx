@@ -9,23 +9,24 @@ import { updateUserProfile } from '@/actions/auth/users';
 jest.mock('@/hooks/organization/use-invites');
 jest.mock('@/hooks/organization/use-organizations');
 jest.mock('@/actions/auth/users');
-jest.mock('@/components/common/loading/SkeletonLoader', () => ({
-  UserTableSkeleton: () => <div data-testid="skeleton-loader">Loading...</div>
+jest.mock('@/components/shared/loading/SkeletonLoader', () => ({
+  UserTableSkeleton: () => <div data-testid="skeleton-loader">Loading...</div>,
 }));
 jest.mock('../EditUserModal', () => ({
   __esModule: true,
-  default: ({ user, open, onClose, onSaveProfile }: any) => open ? (
-    <div data-testid="edit-modal">
-      <div>Edit User Modal</div>
-      <button onClick={() => onSaveProfile(user.id, { fullName: 'Updated Name' })}>Save</button>
-      <button onClick={onClose}>Close</button>
-    </div>
-  ) : null
+  default: ({ user, open, onClose, onSaveProfile }: any) =>
+    open ? (
+      <div data-testid="edit-modal">
+        <div>Edit User Modal</div>
+        <button onClick={() => onSaveProfile(user.id, { fullName: 'Updated Name' })}>Save</button>
+        <button onClick={onClose}>Close</button>
+      </div>
+    ) : null,
 }));
 jest.mock('next/image', () => ({
   __esModule: true,
   // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-  default: (props: any) => <img {...props} />
+  default: (props: any) => <img {...props} />,
 }));
 
 const mockUser = {
@@ -63,7 +64,7 @@ const mockUsers = [
     fullName: null,
     username: 'user3',
     avatarUrl: null,
-  }
+  },
 ];
 
 const mockOrg = {
@@ -104,7 +105,7 @@ const mockInvites = [
     organization: 'org-123',
     created_at: new Date('2024-01-02'),
     updatedAt: new Date('2024-01-02'),
-  }
+  },
 ];
 
 const mockInviteHooks = {
@@ -124,7 +125,7 @@ const defaultProps = {
   org: mockOrg,
   userGroups: mockUserGroups,
   updateUserGroup: jest.fn(),
-  getUserStatus: jest.fn((user) => {
+  getUserStatus: jest.fn(user => {
     if (user.id === 'user-1') return 'active';
     if (user.id === 'user-2') return 'inactive';
     return 'not_started';
@@ -136,7 +137,9 @@ describe('UserTable Component', () => {
     jest.clearAllMocks();
     jest.spyOn(console, 'log').mockImplementation();
     // Make fetchOrgInvites resolve synchronously for the initial load
-    mockInviteHooks.fetchOrgInvites.mockImplementation(() => Promise.resolve({ invites: mockInvites }));
+    mockInviteHooks.fetchOrgInvites.mockImplementation(() =>
+      Promise.resolve({ invites: mockInvites })
+    );
     (useInvites as jest.Mock).mockReturnValue(mockInviteHooks);
     (useOrgs as jest.Mock).mockReturnValue(mockOrgHooks);
   });
@@ -338,7 +341,9 @@ describe('UserTable Component', () => {
 
     it('should disable inputs while inviting', async () => {
       const user = userEvent.setup();
-      mockInviteHooks.sendInvite.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
+      mockInviteHooks.sendInvite.mockImplementation(
+        () => new Promise(resolve => setTimeout(resolve, 100))
+      );
 
       render(<UserTable {...defaultProps} />);
 
@@ -382,7 +387,9 @@ describe('UserTable Component', () => {
     });
 
     it('should show loading state while deleting invite', async () => {
-      mockInviteHooks.deleteInvite.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
+      mockInviteHooks.deleteInvite.mockImplementation(
+        () => new Promise(resolve => setTimeout(resolve, 100))
+      );
 
       render(<UserTable {...defaultProps} />);
 

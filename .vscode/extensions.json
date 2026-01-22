@@ -1,5 +1,11 @@
 {
   "recommendations": [
-    "denoland.vscode-deno"
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "bradlc.vscode-tailwindcss",
+    "ms-vscode.vscode-typescript-next",
+    "denoland.vscode-deno",
+    "GitHub.copilot",
+    "GitHub.copilot-chat"
   ]
 }
