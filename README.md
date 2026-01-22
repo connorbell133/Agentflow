@@ -7,7 +7,7 @@
 [![Next.js 14](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
 
-[🚀 Quick Start](#-quick-start) · [📖 Documentation](#-documentation) · [💬 Discussions](https://github.com/your-org/chat-platform/discussions) · [🐛 Issues](https://github.com/your-org/chat-platform/issues)
+[🌐 Live Demo](https://app.agentflow.live) · [🏠 Website](https://agentflow.live) · [🚀 Quick Start](#-quick-start) · [📖 Documentation](#-documentation) · [💬 Discussions](https://github.com/your-org/chat-platform/discussions) · [🐛 Issues](https://github.com/your-org/chat-platform/issues)
 
 ---
 
@@ -30,12 +30,22 @@
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Option 1: Use Hosted Version
+
+Try AgentFlow instantly without any setup:
+
+**[Launch AgentFlow →](https://app.agentflow.live)**
+
+No installation required. Sign up and start connecting your AI endpoints in minutes.
+
+### Option 2: Self-Hosted Setup
+
+**Prerequisites:**
 - Node.js 18+
 - Supabase CLI ([Installation](https://supabase.com/docs/guides/cli))
 - Clerk account ([Sign up](https://clerk.com))
 
-### 5-Minute Setup
+**5-Minute Setup:**
 
 ```bash
 # Clone and install
@@ -216,9 +226,25 @@ Build LangChain agent → Deploy to Cloud Run → Connect to AgentFlow → Profe
 
 ---
 
-## 🚢 Deployment
+## 🚢 Deployment Options
 
-### Vercel (Recommended)
+### Hosted by AgentFlow (Easiest)
+
+**Get started in 2 minutes with zero infrastructure setup:**
+
+🌐 **[app.agentflow.live](https://app.agentflow.live)**
+
+- ✅ No server management
+- ✅ Automatic updates
+- ✅ 99.9% uptime guarantee
+- ✅ Enterprise support available
+- ✅ Free tier available
+
+Perfect for teams who want to focus on AI, not infrastructure.
+
+### Self-Hosted (Full Control)
+
+**Vercel (Recommended)**
 
 ```bash
 # 1. Push to GitHub
@@ -234,7 +260,7 @@ git push origin main
 # Automatic on git push
 ```
 
-### Self-Hosted
+**Other Platforms**
 
 ```bash
 # 1. Build application
@@ -272,6 +298,8 @@ We welcome contributions! AgentFlow is open source (AGPL-3.0).
 
 ## 📞 Support & Community
 
+- 🌐 **[Website](https://agentflow.live)** - Learn more about AgentFlow
+- 🚀 **[Hosted Platform](https://app.agentflow.live)** - Try the hosted version
 - 💬 **[GitHub Discussions](https://github.com/your-org/chat-platform/discussions)** - Ask questions, share ideas
 - 🐛 **[GitHub Issues](https://github.com/your-org/chat-platform/issues)** - Report bugs
 - 📖 **[Documentation](./docs/)** - Comprehensive guides
@@ -336,6 +364,6 @@ If you find AgentFlow useful, please star the repository! It helps others discov
 
 **Stop building infrastructure. Start shipping AI.**
 
-[Get Started →](./docs/getting-started/INSTALLATION.md)
+[Try Hosted Version →](https://app.agentflow.live) | [Self-Host Guide →](./docs/getting-started/INSTALLATION.md) | [Learn More →](https://agentflow.live)
 
 </div>
