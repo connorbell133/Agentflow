@@ -56,6 +56,14 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
 
+  /* Global test timeout */
+  timeout: 30000,
+
+  /* Expect timeout */
+  expect: {
+    timeout: 10000,
+  },
+
   /* Run your local dev server before starting the tests */
   webServer: {
     command: 'npm run dev',
@@ -64,6 +72,11 @@ export default defineConfig({
     timeout: 120000, // 2 minutes
     stdout: 'pipe',
     stderr: 'pipe',
+    // Pass environment variables to the dev server
+    env: {
+      ...process.env,
+      NODE_ENV: 'test',
+    },
   },
 
   /* Configure projects for major browsers */

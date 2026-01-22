@@ -12,10 +12,10 @@ This guide explains how to set up and run end-to-end (E2E) tests for the AgentFl
 
 ### 1. Set Up Test Environment
 
-Copy the example test environment file:
+Copy the example environment file to create your test environment file:
 
 ```bash
-cp .env.test.example .env.test
+cp .env.example .env.test
 ```
 
 Edit `.env.test` and fill in your test credentials:
@@ -110,7 +110,7 @@ Located in `tests/e2e/utils/`:
 
 ### "TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD must be set"
 
-Make sure you've created `.env.test` from `.env.test.example` and filled in the test credentials.
+Make sure you've created `.env.test` from `.env.example` and filled in the test credentials.
 
 ### "NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set"
 
@@ -158,6 +158,10 @@ TEST_INVITED_USER_PASSWORD
 ```
 
 **Note:** The E2E tests are configured with `continue-on-error: true` in CI while test infrastructure is being set up.
+
+### CI Build Requirements
+
+The CI build job requires placeholder environment variables for Next.js to complete the static generation phase. These are set in `.github/workflows/ci.yml` in the build job and are only used during build time (not at runtime).
 
 ## Best Practices
 

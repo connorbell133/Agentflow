@@ -25,6 +25,14 @@ jobs:
 
       - name: Build application
         run: npm run build
+        env:
+          # Placeholder environment variables for build-time static generation
+          # These are required for Next.js to build but not used at runtime in CI
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_placeholder_key_for_ci_build
+          CLERK_SECRET_KEY: sk_test_placeholder_key_for_ci_build
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder_anon_key_for_ci_build
+          SUPABASE_SERVICE_ROLE_KEY: placeholder_service_role_key_for_ci_build
 
   lint:
     name: Lint
@@ -88,10 +96,8 @@ jobs:
   test-e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
-    # Allow E2E test failures while we set up test infrastructure
-    continue-on-error: true
-    # Only run E2E tests on PRs to main
-    if: github.base_ref == 'main'
+    # Temporarily disabled until test environment secrets are configured
+    if: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
