@@ -22,39 +22,30 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // In CI environment without real Clerk keys, skip ClerkProvider to allow build
-  const isCI = process.env.CI === 'true';
-  const hasValidClerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_');
-
-  const content = (
-    <html lang="en" className="relative" suppressHydrationWarning>
-      <head>
-        <ThemeScript />
-      </head>
-      <body
-        className={twMerge(
-          dmSans.className,
-          robotoMono.variable,
-          bricolageGrotesque.variable,
-          'bg-[#EAEEFE] antialiased dark:bg-background'
-        )}
-      >
-        <ProfileCompletionProvider>
-          <ToastProvider>
-            {children}
-            <BugReportButton />
-          </ToastProvider>
-        </ProfileCompletionProvider>
-      </body>
-    </html>
+  return (
+    <ClerkProvider>
+      <html lang="en" className="relative" suppressHydrationWarning>
+        <head>
+          <ThemeScript />
+        </head>
+        <body
+          className={twMerge(
+            dmSans.className,
+            robotoMono.variable,
+            bricolageGrotesque.variable,
+            'bg-[#EAEEFE] antialiased dark:bg-background'
+          )}
+        >
+          <ProfileCompletionProvider>
+            <ToastProvider>
+              {children}
+              <BugReportButton />
+            </ToastProvider>
+          </ProfileCompletionProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
-
-  // Only use ClerkProvider if we have valid keys (not in CI build)
-  if (isCI && !hasValidClerkKey) {
-    return content;
-  }
-
-  return <ClerkProvider>{content}</ClerkProvider>;
 }
 
 // Add or edit your "generateMetadata" to include the Sentry trace data:

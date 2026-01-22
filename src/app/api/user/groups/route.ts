@@ -1,7 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { verifyJWT } from '@/lib/auth/jwt-verify';
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   console.log('[API/user/groups GET] Request received');
@@ -13,7 +16,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     console.log('[API/user/groups GET] Auth result:', {
       hasUserId: !!userId,
-      userId: userId?.substring(0, 10) + '...'
+      userId: userId?.substring(0, 10) + '...',
     });
 
     // Try JWT verification if no Clerk auth
@@ -25,10 +28,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     if (!userId) {
-      return NextResponse.json(
-        { error: { message: "Unauthorized" } },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: { message: 'Unauthorized' } }, { status: 401 });
     }
 
     const supabase = await createSupabaseServerClient();
@@ -40,14 +40,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       .eq('user_id', userId);
 
     if (groupMapError) {
-      console.error("Error fetching group_map:", groupMapError);
+      console.error('Error fetching group_map:', groupMapError);
       throw groupMapError;
     }
 
     if (!groupMapData || groupMapData.length === 0) {
       return NextResponse.json({
         success: true,
-        data: []
+        data: [],
       });
     }
 
@@ -57,15 +57,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Fetch groups and organizations in parallel
     const [groupsResult, orgsResult] = await Promise.all([
       supabase.from('groups').select('*').in('id', groupIds),
-      supabase.from('organizations').select('*').in('id', org_ids)
+      supabase.from('organizations').select('*').in('id', org_ids),
     ]);
 
     if (groupsResult.error) {
-      console.error("Error fetching groups:", groupsResult.error);
+      console.error('Error fetching groups:', groupsResult.error);
       throw groupsResult.error;
     }
     if (orgsResult.error) {
-      console.error("Error fetching organizations:", orgsResult.error);
+      console.error('Error fetching organizations:', orgsResult.error);
       throw orgsResult.error;
     }
 
@@ -73,32 +73,36 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const orgsMap = new Map((orgsResult.data ?? []).map(o => [o.id, o]));
 
     // Transform the data to match the expected format
-    const formattedGroups = groupMapData.map(gm => {
-      const group = groupsMap.get(gm.group_id);
-      const org = orgsMap.get(gm.org_id);
-      return {
-        id: group?.id,
-        role: group?.role,
-        description: group?.description,
-        org_id: group?.org_id,
-        created_at: group?.created_at,
-        organization: org ? {
-          id: org.id,
-          name: org.name,
-          owner: org.owner,
-          status: org.status
-        } : undefined
-      };
-    }).filter(g => g.id); // Filter out any groups that weren't found
+    const formattedGroups = groupMapData
+      .map(gm => {
+        const group = groupsMap.get(gm.group_id);
+        const org = orgsMap.get(gm.org_id);
+        return {
+          id: group?.id,
+          role: group?.role,
+          description: group?.description,
+          org_id: group?.org_id,
+          created_at: group?.created_at,
+          organization: org
+            ? {
+                id: org.id,
+                name: org.name,
+                owner: org.owner,
+                status: org.status,
+              }
+            : undefined,
+        };
+      })
+      .filter(g => g.id); // Filter out any groups that weren't found
 
     return NextResponse.json({
       success: true,
-      data: formattedGroups
+      data: formattedGroups,
     });
   } catch (error) {
-    console.error("Error fetching user groups:", error);
+    console.error('Error fetching user groups:', error);
     return NextResponse.json(
-      { error: { message: "Failed to fetch user groups" } },
+      { error: { message: 'Failed to fetch user groups' } },
       { status: 500 }
     );
   }
