@@ -10,6 +10,8 @@
     "lint:fix": "oxlint-tsgolint --fix",
     "start": "next start",
     "lint": "next lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -22,6 +24,7 @@
     "test:e2e:report": "playwright show-report",
     "create-env": "printenv > .env",
     "type-check": "tsc --noEmit",
+    "prepare": "husky",
     "db:generate": "echo '⚠️  Use Supabase migrations only: supabase migration new <name>' && exit 1",
     "db:migrate": "echo '⚠️  Use Supabase migrations: supabase db reset (local) or supabase db push (remote)' && exit 1",
     "db:pull": "supabase db pull",
@@ -110,11 +113,26 @@
     "concurrently": "^9.2.0",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.33",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
+    "lint-staged": "^16.2.7",
     "oxlint-tsgolint": "^0.10.0",
+    "prettier": "^3.8.1",
+    "prettier-plugin-tailwindcss": "^0.7.2",
     "tailwindcss": "^3.4.1",
     "tsx": "^4.20.4",
     "typescript": "5.7.3"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "prettier --write",
+      "eslint --fix",
+      "bash -c 'tsc --project tsconfig.build.json --noEmit'"
+    ],
+    "*.{json,md,yml,yaml,css}": [
+      "prettier --write"
+    ]
   }
 }

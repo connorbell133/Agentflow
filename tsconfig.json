@@ -20,13 +20,16 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@root/*":["./*"]
+      "@root/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "assets.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": [
     "node_modules",
     "**/_archive/**",
-    "supabase/migrations/_archive/**"
+    "supabase/migrations/_archive/**",
+    "seed.ts",
+    "src/db/seed.ts",
+    "tools/scripts/seed-conversations.ts"
   ]
 }

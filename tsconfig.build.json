@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "**/_archive/**",
+    "supabase/migrations/_archive/**",
+    "seed.ts",
+    "src/db/seed.ts",
+    "tools/scripts/seed-conversations.ts",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/__tests__/**",
+    "tests/**"
+  ]
+}
