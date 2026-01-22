@@ -7,7 +7,15 @@
 [![Next.js 14](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
 
-[🌐 Live Demo](https://app.agentflow.live) · [🏠 Website](https://agentflow.live) · [🚀 Quick Start](#-quick-start) · [📖 Documentation](#-documentation) · [💬 Discussions](https://github.com/your-org/chat-platform/discussions) · [🐛 Issues](https://github.com/your-org/chat-platform/issues)
+[☁️ Fully Hosted Platform](https://app.agentflow.live) · [🏠 Website](https://agentflow.live) · [🚀 Self-Host Guide](#-quick-start) · [📖 Documentation](#-documentation) · [💬 Discussions](https://github.com/your-org/chat-platform/discussions) · [🐛 Issues](https://github.com/your-org/chat-platform/issues)
+
+---
+
+> **💡 New to AgentFlow?**
+>
+> **[Start with our fully hosted platform →](https://app.agentflow.live)** No installation needed. Free tier available.
+>
+> Prefer self-hosting? [Jump to installation guide](#option-2-self-hosted-open-source)
 
 ---
 
@@ -30,15 +38,22 @@
 
 ## 🚀 Quick Start
 
-### Option 1: Use Hosted Version
+### Option 1: Fully Hosted Platform (Recommended)
 
-Try AgentFlow instantly without any setup:
+**Don't want to manage infrastructure? We've got you covered.**
 
-**[Launch AgentFlow →](https://app.agentflow.live)**
+**[Get Started on AgentFlow Cloud →](https://app.agentflow.live)**
 
-No installation required. Sign up and start connecting your AI endpoints in minutes.
+✅ **Zero setup** - Sign up and start in 2 minutes
+✅ **Fully managed** - We handle hosting, updates, and maintenance
+✅ **Production-ready** - Enterprise-grade infrastructure
+✅ **Free tier available** - No credit card required to start
 
-### Option 2: Self-Hosted Setup
+Perfect for teams who want to focus on AI, not DevOps.
+
+---
+
+### Option 2: Self-Hosted (Open Source)
 
 **Prerequisites:**
 - Node.js 18+
@@ -226,23 +241,28 @@ Build LangChain agent → Deploy to Cloud Run → Connect to AgentFlow → Profe
 
 ---
 
-## 🚢 Deployment Options
+## 🚢 Deployment
 
-### Hosted by AgentFlow (Easiest)
+### Fully Managed Cloud Hosting
 
-**Get started in 2 minutes with zero infrastructure setup:**
+**Production-ready infrastructure without the hassle:**
 
-🌐 **[app.agentflow.live](https://app.agentflow.live)**
+☁️ **[AgentFlow Cloud](https://app.agentflow.live)** - Fully hosted and managed
 
-- ✅ No server management
-- ✅ Automatic updates
-- ✅ 99.9% uptime guarantee
-- ✅ Enterprise support available
-- ✅ Free tier available
+- ✅ **Zero DevOps** - We manage servers, scaling, and updates
+- ✅ **Enterprise SLA** - 99.9% uptime guarantee
+- ✅ **Automatic backups** - Your data is always safe
+- ✅ **24/7 monitoring** - We keep your AI agents running
+- ✅ **Free tier** - Start free, scale as you grow
+- ✅ **Enterprise plans** - Custom solutions for large teams
 
-Perfect for teams who want to focus on AI, not infrastructure.
+**This is the same codebase, fully managed by the AgentFlow team.**
 
-### Self-Hosted (Full Control)
+→ [View Pricing & Plans](https://agentflow.live/pricing)
+
+---
+
+### Self-Hosted Deployment (Full Control)
 
 **Vercel (Recommended)**
 
@@ -299,7 +319,7 @@ We welcome contributions! AgentFlow is open source (AGPL-3.0).
 ## 📞 Support & Community
 
 - 🌐 **[Website](https://agentflow.live)** - Learn more about AgentFlow
-- 🚀 **[Hosted Platform](https://app.agentflow.live)** - Try the hosted version
+- ☁️ **[Fully Hosted Platform](https://app.agentflow.live)** - Managed cloud hosting (no setup required)
 - 💬 **[GitHub Discussions](https://github.com/your-org/chat-platform/discussions)** - Ask questions, share ideas
 - 🐛 **[GitHub Issues](https://github.com/your-org/chat-platform/issues)** - Report bugs
 - 📖 **[Documentation](./docs/)** - Comprehensive guides
@@ -364,6 +384,8 @@ If you find AgentFlow useful, please star the repository! It helps others discov
 
 **Stop building infrastructure. Start shipping AI.**
 
-[Try Hosted Version →](https://app.agentflow.live) | [Self-Host Guide →](./docs/getting-started/INSTALLATION.md) | [Learn More →](https://agentflow.live)
+**Choose your path:**
+
+[☁️ Fully Managed Cloud](https://app.agentflow.live) · [🔧 Self-Host (Open Source)](./docs/getting-started/INSTALLATION.md) · [📖 Learn More](https://agentflow.live)
 
 </div>
