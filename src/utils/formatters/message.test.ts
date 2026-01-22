@@ -350,7 +350,8 @@ describe('Message Formatting Utilities', () => {
 
       const result = validatemessage_format_config(config);
       expect(result.valid).toBe(false);
-      expect(result.errors).toHaveLength(2);
+      // Should have 4 errors: 2 for missing required fields (role, content) + 2 for empty target paths
+      expect(result.errors).toHaveLength(4);
     });
 
     it('validates literal mappings require literalValue', () => {

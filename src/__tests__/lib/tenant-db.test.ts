@@ -2,7 +2,13 @@
  * Unit tests for tenant-aware database helpers
  */
 
-import { getTenantContext, getOrgTenantContext, tryGetTenantContext, hasOrgAccess, assertOrgAccess } from '@/lib/db/tenant-context';
+import {
+  getTenantContext,
+  getOrgTenantContext,
+  tryGetTenantContext,
+  hasOrgAccess,
+  assertOrgAccess,
+} from '@/lib/db/tenant-context';
 import { TenantContextError } from '@/lib/db/tenant-errors';
 import { auth } from '@clerk/nextjs/server';
 
@@ -17,7 +23,7 @@ describe('getTenantContext', () => {
   it('should return tenant context when user is authenticated', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      org_id: 'org-456',
+      orgId: 'org-456',
       sessionId: 'session-789',
     } as any);
 
@@ -33,7 +39,7 @@ describe('getTenantContext', () => {
   it('should throw TenantContextError when user is not authenticated', async () => {
     mockAuth.mockResolvedValue({
       userId: null,
-      org_id: null,
+      orgId: null,
       sessionId: null,
     } as any);
 
@@ -44,7 +50,7 @@ describe('getTenantContext', () => {
   it('should allow null org_id for users not in an organization', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      org_id: null,
+      orgId: null,
       sessionId: 'session-789',
     } as any);
 
@@ -59,7 +65,7 @@ describe('getOrgTenantContext', () => {
   it('should return context when user is in an organization', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      org_id: 'org-456',
+      orgId: 'org-456',
       sessionId: 'session-789',
     } as any);
 
@@ -75,7 +81,7 @@ describe('getOrgTenantContext', () => {
   it('should throw error when user is not in an organization', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      org_id: null,
+      orgId: null,
       sessionId: 'session-789',
     } as any);
 
@@ -86,7 +92,7 @@ describe('getOrgTenantContext', () => {
   it('should throw error when user is not authenticated', async () => {
     mockAuth.mockResolvedValue({
       userId: null,
-      org_id: null,
+      orgId: null,
       sessionId: null,
     } as any);
 
@@ -98,7 +104,7 @@ describe('tryGetTenantContext', () => {
   it('should return context when authenticated', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      org_id: 'org-456',
+      orgId: 'org-456',
       sessionId: 'session-789',
     } as any);
 
@@ -114,7 +120,7 @@ describe('tryGetTenantContext', () => {
   it('should return null when not authenticated', async () => {
     mockAuth.mockResolvedValue({
       userId: null,
-      org_id: null,
+      orgId: null,
       sessionId: null,
     } as any);
 
@@ -134,7 +140,7 @@ describe('hasOrgAccess', () => {
   it('should return true when user is in the target organization', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      org_id: 'org-456',
+      orgId: 'org-456',
       sessionId: 'session-789',
     } as any);
 
@@ -146,7 +152,7 @@ describe('hasOrgAccess', () => {
   it('should return false when user is in a different organization', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      org_id: 'org-456',
+      orgId: 'org-456',
       sessionId: 'session-789',
     } as any);
 
@@ -158,7 +164,7 @@ describe('hasOrgAccess', () => {
   it('should return false when user is not authenticated', async () => {
     mockAuth.mockResolvedValue({
       userId: null,
-      org_id: null,
+      orgId: null,
       sessionId: null,
     } as any);
 
@@ -170,7 +176,7 @@ describe('hasOrgAccess', () => {
   it('should return false when user is not in any organization', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      org_id: null,
+      orgId: null,
       sessionId: 'session-789',
     } as any);
 
@@ -184,7 +190,7 @@ describe('assertOrgAccess', () => {
   it('should not throw when user has access', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      org_id: 'org-456',
+      orgId: 'org-456',
       sessionId: 'session-789',
     } as any);
 
@@ -194,18 +200,20 @@ describe('assertOrgAccess', () => {
   it('should throw when user does not have access', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      org_id: 'org-456',
+      orgId: 'org-456',
       sessionId: 'session-789',
     } as any);
 
     await expect(assertOrgAccess('org-999')).rejects.toThrow(TenantContextError);
-    await expect(assertOrgAccess('org-999')).rejects.toThrow('does not have access to organization');
+    await expect(assertOrgAccess('org-999')).rejects.toThrow(
+      'does not have access to organization'
+    );
   });
 
   it('should throw when user is not authenticated', async () => {
     mockAuth.mockResolvedValue({
       userId: null,
-      org_id: null,
+      orgId: null,
       sessionId: null,
     } as any);
 
@@ -234,7 +242,7 @@ describe('Security Edge Cases', () => {
   it('should handle undefined userId gracefully', async () => {
     mockAuth.mockResolvedValue({
       userId: undefined,
-      org_id: 'org-456',
+      orgId: 'org-456',
       sessionId: 'session-789',
     } as any);
 
@@ -244,7 +252,7 @@ describe('Security Edge Cases', () => {
   it('should handle empty string userId as invalid', async () => {
     mockAuth.mockResolvedValue({
       userId: '',
-      org_id: 'org-456',
+      orgId: 'org-456',
       sessionId: 'session-789',
     } as any);
 
@@ -254,7 +262,7 @@ describe('Security Edge Cases', () => {
   it('should allow sessions without sessionId', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      org_id: 'org-456',
+      orgId: 'org-456',
       sessionId: null,
     } as any);
 
