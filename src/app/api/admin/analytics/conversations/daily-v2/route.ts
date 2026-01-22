@@ -62,6 +62,21 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     const supabase = await createSupabaseServerClient();
 
+    // Verify user is a member of the requested organization
+    const { data: membershipData, error: membershipError } = await supabase
+      .from('org_map')
+      .select('id')
+      .eq('user_id', authResult.userId)
+      .eq('org_id', validatedorg_id)
+      .single();
+
+    if (membershipError || !membershipData) {
+      return NextResponse.json(
+        { error: 'Forbidden: User is not a member of this organization' },
+        { status: 403 }
+      );
+    }
+
     // Fetch conversations within the date range
     const { data: conversations, error } = await supabase
       .from('conversations')
