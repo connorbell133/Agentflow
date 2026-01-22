@@ -12,10 +12,10 @@
     {
       "type": "pull_request",
       "parameters": {
-        "required_approving_review_count": 1,
-        "dismiss_stale_reviews_on_push": false,
+        "required_approving_review_count": 2,
+        "dismiss_stale_reviews_on_push": true,
         "require_code_owner_review": true,
-        "require_last_push_approval": false,
+        "require_last_push_approval": true,
         "required_review_thread_resolution": true
       }
     },
@@ -24,20 +24,19 @@
       "parameters": {
         "required_status_checks": [
           {
-            "context": "build",
-            "integration_id": null
+            "context": "build"
           },
           {
-            "context": "lint",
-            "integration_id": null
+            "context": "lint"
           },
           {
-            "context": "test",
-            "integration_id": null
+            "context": "test"
           },
           {
-            "context": "type-check",
-            "integration_id": null
+            "context": "test:e2e"
+          },
+          {
+            "context": "type-check"
           }
         ],
         "strict_required_status_checks_policy": true
@@ -49,6 +48,14 @@
     },
     {
       "type": "deletion",
+      "parameters": {}
+    },
+    {
+      "type": "required_signatures",
+      "parameters": {}
+    },
+    {
+      "type": "required_linear_history",
       "parameters": {}
     }
   ],
