@@ -1,22 +1,24 @@
-import type { Metadata } from "next";
-import { DM_Sans, Roboto_Mono, Bricolage_Grotesque } from "next/font/google";
-import "./globals.css";
-import { twMerge } from "tailwind-merge";
+import type { Metadata } from 'next';
+import { DM_Sans, Roboto_Mono, Bricolage_Grotesque } from 'next/font/google';
+import './globals.css';
+import { twMerge } from 'tailwind-merge';
 import { ClerkProvider } from '@clerk/nextjs';
-import { ThemeScript } from "@/components/shared/theme/ThemeScript";
-import { ProfileCompletionProvider } from "@/providers/ProfileCompletionProvider";
-import { ToastProvider } from "@/components/ui/toast";
-import { BugReportButton } from "@/components/features/feedback/BugReportButton";
+import { ThemeScript } from '@/components/shared/theme/ThemeScript';
+import { ProfileCompletionProvider } from '@/providers/ProfileCompletionProvider';
+import { ToastProvider } from '@/components/ui/toast';
+import { BugReportButton } from '@/components/features/feedback/BugReportButton';
 import * as Sentry from '@sentry/nextjs';
 
-
-const dmSans = DM_Sans({ subsets: ["latin"] });
-const robotoMono = Roboto_Mono({ subsets: ["latin"], variable: "--font-roboto-mono" });
+const dmSans = DM_Sans({ subsets: ['latin'] });
+const robotoMono = Roboto_Mono({ subsets: ['latin'], variable: '--font-roboto-mono' });
 const bricolageGrotesque = Bricolage_Grotesque({
-  subsets: ["latin"],
-  variable: "--font-bricolage-grotesque",
-  weight: ["400"] // Regular weight
+  subsets: ['latin'],
+  variable: '--font-bricolage-grotesque',
+  weight: ['400'], // Regular weight
 });
+
+// Force dynamic rendering - auth-protected app shouldn't be statically generated
+export const dynamic = 'force-dynamic';
 
 export default function RootLayout({
   children,
@@ -29,7 +31,14 @@ export default function RootLayout({
         <head>
           <ThemeScript />
         </head>
-        <body className={twMerge(dmSans.className, robotoMono.variable, bricolageGrotesque.variable, "antialiased bg-[#EAEEFE] dark:bg-background")}>
+        <body
+          className={twMerge(
+            dmSans.className,
+            robotoMono.variable,
+            bricolageGrotesque.variable,
+            'bg-[#EAEEFE] antialiased dark:bg-background'
+          )}
+        >
           <ProfileCompletionProvider>
             <ToastProvider>
               {children}
@@ -45,10 +54,10 @@ export default function RootLayout({
 // Add or edit your "generateMetadata" to include the Sentry trace data:
 export function generateMetadata(): Metadata {
   return {
-    title: "AgentFlow",
-    description: "AI Chat Management Platform",
+    title: 'AgentFlow',
+    description: 'AI Chat Management Platform',
     other: {
-      ...Sentry.getTraceData()
-    }
+      ...Sentry.getTraceData(),
+    },
   };
 }

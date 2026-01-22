@@ -1,0 +1,41 @@
+# CODEOWNERS file
+# This file defines who must review and approve PRs for specific paths
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global ownership - requires your review for all changes
+* @connorbell133
+
+# Critical infrastructure - requires your approval
+/supabase/ @connorbell133
+/supabase/migrations/ @connorbell133
+/.github/ @connorbell133
+/.github/workflows/ @connorbell133
+
+# Core source code - requires your approval
+/src/lib/supabase/ @connorbell133
+/src/middleware/rls/ @connorbell133
+/src/db/ @connorbell133
+
+# Configuration files - requires your approval
+/.env.example @connorbell133
+/package.json @connorbell133
+/package-lock.json @connorbell133
+/tsconfig.json @connorbell133
+/next.config.ts @connorbell133
+
+# Security and authentication - requires your approval
+/src/lib/clerk/ @connorbell133
+/src/actions/auth/ @connorbell133
+
+# Documentation - you can add trusted maintainers here
+/docs/ @connorbell133
+/README.md @connorbell133
+/CONTRIBUTING.md @connorbell133
+/LICENSE @connorbell133
+
+# Examples - community can contribute but you review
+/examples/ @connorbell133
+
+# Tests - you review but can delegate
+/tests/ @connorbell133
+/__tests__/ @connorbell133
