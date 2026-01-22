@@ -28,7 +28,8 @@ jobs:
         env:
           # Placeholder environment variables for build-time static generation
           # These are required for Next.js to build but not used at runtime in CI
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_placeholder_key_for_ci_build
+          # Valid-format Clerk key (passes validation but doesn't connect to real instance)
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2lfdGVzdA_Y2xlcmsuZXhhbXBsZS5jb20k
           CLERK_SECRET_KEY: sk_test_placeholder_key_for_ci_build
           NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder_anon_key_for_ci_build
