@@ -17,6 +17,9 @@ const bricolageGrotesque = Bricolage_Grotesque({
   weight: ['400'], // Regular weight
 });
 
+// Force dynamic rendering - auth-protected app shouldn't be statically generated
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({
   children,
 }: Readonly<{
