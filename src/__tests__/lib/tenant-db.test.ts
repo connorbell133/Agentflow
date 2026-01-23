@@ -10,10 +10,10 @@ import {
   assertOrgAccess,
 } from '@/lib/db/tenant-context';
 import { TenantContextError } from '@/lib/db/tenant-errors';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/lib/auth/server';
 
-// Mock Clerk auth
-jest.mock('@clerk/nextjs/server', () => ({
+// Mock Better-Auth
+jest.mock('@/lib/auth/server', () => ({
   auth: jest.fn(),
 }));
 

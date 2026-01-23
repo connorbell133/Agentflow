@@ -3,7 +3,7 @@
  * Provides a single source of truth for user authentication and organization context
  */
 
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/lib/auth/server';
 import { TenantContextError } from './tenant-errors';
 
 /**
@@ -12,11 +12,10 @@ import { TenantContextError } from './tenant-errors';
 export interface TenantContext {
   userId: string;
   org_id: string | null;
-  sessionId: string | null;
 }
 
 /**
- * Get the current tenant context from Clerk authentication
+ * Get the current tenant context from Supabase Auth
  * This is the single source of truth for tenant isolation
  *
  * @throws {TenantContextError} If user is not authenticated
@@ -24,13 +23,13 @@ export interface TenantContext {
  */
 export async function getTenantContext(): Promise<TenantContext> {
   const authResult = await auth();
-  const { userId, sessionId, orgId } = authResult;
+  const { userId, org_id: orgId } = authResult;
 
   if (!userId) {
     throw new TenantContextError('User must be authenticated to access this resource');
   }
 
-  // If Clerk doesn't provide an org_id, try to get it from the database
+  // If Supabase doesn't provide an org_id, try to get it from the database
   let finalorg_id = orgId || null;
 
   if (!finalorg_id) {
@@ -46,7 +45,6 @@ export async function getTenantContext(): Promise<TenantContext> {
   return {
     userId,
     org_id: finalorg_id,
-    sessionId: sessionId || null,
   };
 }
 
@@ -57,17 +55,18 @@ export async function getTenantContext(): Promise<TenantContext> {
  * @throws {TenantContextError} If user is not authenticated or not in an organization
  * @returns {Required<TenantContext>} Tenant context with guaranteed org_id
  */
-export async function getOrgTenantContext(): Promise<Required<Omit<TenantContext, 'sessionId'>> & { sessionId: string | null }> {
+export async function getOrgTenantContext(): Promise<Required<TenantContext>> {
   const context = await getTenantContext();
 
   if (!context.org_id) {
-    throw new TenantContextError('User must be part of an organization to access this resource. Please ensure you are assigned to an organization.');
+    throw new TenantContextError(
+      'User must be part of an organization to access this resource. Please ensure you are assigned to an organization.'
+    );
   }
 
   return {
     userId: context.userId,
     org_id: context.org_id,
-    sessionId: context.sessionId,
   };
 }
 

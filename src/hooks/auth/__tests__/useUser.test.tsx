@@ -1,10 +1,10 @@
 import { renderHook, waitFor } from '@testing-library/react';
-import { useUser as useClerkUser } from '@clerk/nextjs';
+import { useSession } from '@/lib/auth/client-helpers';
 import { useUser } from '../use-user';
 import { getUserProfile, getUserGroups } from '@/actions/auth/users';
 import { User as Profile } from '@/lib/supabase/types';
 
-jest.mock('@clerk/nextjs');
+jest.mock('@/lib/auth/client-helpers');
 jest.mock('@/actions/auth/users');
 jest.mock('@/lib/infrastructure/logger', () => ({
   createLogger: () => ({
@@ -15,11 +15,10 @@ jest.mock('@/lib/infrastructure/logger', () => ({
   }),
 }));
 
-const mockClerkUser = {
-  id: 'clerk-user-123',
-  firstName: 'John',
-  lastName: 'Doe',
-  emailAddresses: [{ emailAddress: 'john@example.com' }],
+const mockBetterAuthUser = {
+  id: 'user-123',
+  name: 'John Doe',
+  email: 'john@example.com',
 };
 
 const mockProfile: Profile = {
@@ -43,31 +42,29 @@ const mockAdminGroups = [
   { groups: { role: 'user', name: 'User Group' } },
 ];
 
-const mockUserGroups = [
-  { groups: { role: 'user', name: 'User Group' } },
-];
+const mockUserGroups = [{ groups: { role: 'user', name: 'User Group' } }];
 
 describe('useUser Hook', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (useClerkUser as jest.Mock).mockReturnValue({
-      user: mockClerkUser,
-      isLoaded: true,
+    (useSession as jest.Mock).mockReturnValue({
+      data: { user: mockBetterAuthUser },
+      isPending: false,
     });
     (getUserProfile as jest.Mock).mockResolvedValue([mockProfile]);
     (getUserGroups as jest.Mock).mockResolvedValue(mockUserGroups);
   });
 
   describe('Initial State', () => {
-    it('should return initial state when Clerk is not loaded', () => {
-      (useClerkUser as jest.Mock).mockReturnValue({
-        user: null,
-        isLoaded: false,
+    it('should return initial state when session is loading', () => {
+      (useSession as jest.Mock).mockReturnValue({
+        data: null,
+        isPending: true,
       });
 
       const { result } = renderHook(() => useUser());
 
-      expect(result.current.user).toBeNull();
+      expect(result.current.user).toBeUndefined();
       expect(result.current.profile).toBeNull();
       expect(result.current.userAdmin).toBe(false);
       expect(result.current.isUserLoaded).toBe(false);
@@ -75,24 +72,24 @@ describe('useUser Hook', () => {
   });
 
   describe('User Data Fetching', () => {
-    it('should fetch user profile and groups when Clerk user is loaded', async () => {
+    it('should fetch user profile and groups when Better-Auth user is loaded', async () => {
       const { result } = renderHook(() => useUser());
 
       await waitFor(() => {
         expect(result.current.profile).toEqual(mockProfile);
       });
 
-      expect(getUserProfile).toHaveBeenCalledWith('clerk-user-123');
-      expect(getUserGroups).toHaveBeenCalledWith('clerk-user-123');
-      expect(result.current.user).toEqual(mockClerkUser);
+      expect(getUserProfile).toHaveBeenCalledWith('user-123');
+      expect(getUserGroups).toHaveBeenCalledWith('user-123');
+      expect(result.current.user).toEqual(mockBetterAuthUser);
       expect(result.current.userAdmin).toBe(false);
       expect(result.current.isUserLoaded).toBe(true);
     });
 
-    it('should not fetch data when no Clerk user exists', async () => {
-      (useClerkUser as jest.Mock).mockReturnValue({
-        user: null,
-        isLoaded: true,
+    it('should not fetch data when no user exists', async () => {
+      (useSession as jest.Mock).mockReturnValue({
+        data: null,
+        isPending: false,
       });
 
       renderHook(() => useUser());
@@ -190,7 +187,7 @@ describe('useUser Hook', () => {
   });
 
   describe('Hook Re-render', () => {
-    it('should refetch data when Clerk user changes', async () => {
+    it('should refetch data when user changes', async () => {
       const { result, rerender } = renderHook(() => useUser());
 
       await waitFor(() => {
@@ -199,26 +196,26 @@ describe('useUser Hook', () => {
 
       expect(getUserProfile).toHaveBeenCalledTimes(1);
 
-      // Change the Clerk user
-      const newClerkUser = { ...mockClerkUser, id: 'clerk-user-456' };
-      (useClerkUser as jest.Mock).mockReturnValue({
-        user: newClerkUser,
-        isLoaded: true,
+      // Change the user
+      const newUser = { ...mockBetterAuthUser, id: 'user-456' };
+      (useSession as jest.Mock).mockReturnValue({
+        data: { user: newUser },
+        isPending: false,
       });
 
       rerender();
 
       await waitFor(() => {
-        expect(getUserProfile).toHaveBeenCalledWith('clerk-user-456');
+        expect(getUserProfile).toHaveBeenCalledWith('user-456');
       });
 
       expect(getUserProfile).toHaveBeenCalledTimes(2);
     });
 
-    it('should not fetch when isLoaded is false', () => {
-      (useClerkUser as jest.Mock).mockReturnValue({
-        user: mockClerkUser,
-        isLoaded: false,
+    it('should not fetch when session is pending', () => {
+      (useSession as jest.Mock).mockReturnValue({
+        data: { user: mockBetterAuthUser },
+        isPending: true,
       });
 
       renderHook(() => useUser());
@@ -227,11 +224,11 @@ describe('useUser Hook', () => {
       expect(getUserGroups).not.toHaveBeenCalled();
     });
 
-    it('should fetch when isLoaded changes to true', async () => {
-      // Initially not loaded
-      (useClerkUser as jest.Mock).mockReturnValue({
-        user: mockClerkUser,
-        isLoaded: false,
+    it('should fetch when isPending changes to false', async () => {
+      // Initially pending
+      (useSession as jest.Mock).mockReturnValue({
+        data: { user: mockBetterAuthUser },
+        isPending: true,
       });
 
       const { rerender } = renderHook(() => useUser());
@@ -239,15 +236,15 @@ describe('useUser Hook', () => {
       expect(getUserProfile).not.toHaveBeenCalled();
 
       // Now loaded
-      (useClerkUser as jest.Mock).mockReturnValue({
-        user: mockClerkUser,
-        isLoaded: true,
+      (useSession as jest.Mock).mockReturnValue({
+        data: { user: mockBetterAuthUser },
+        isPending: false,
       });
 
       rerender();
 
       await waitFor(() => {
-        expect(getUserProfile).toHaveBeenCalledWith('clerk-user-123');
+        expect(getUserProfile).toHaveBeenCalledWith('user-123');
       });
     });
   });
@@ -311,5 +308,4 @@ describe('useUser Hook', () => {
       });
     });
   });
-
 });

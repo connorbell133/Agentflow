@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/lib/auth/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { verifyJWT } from '@/lib/auth/jwt-verify';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -10,22 +9,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   console.log('[API/user/groups GET] Request received');
 
   try {
-    // Get auth context
-    const authResult = await auth();
-    let userId = authResult.userId;
+    // Get userId from Better-Auth
+    const { userId } = await auth();
 
     console.log('[API/user/groups GET] Auth result:', {
       hasUserId: !!userId,
       userId: userId?.substring(0, 10) + '...',
     });
-
-    // Try JWT verification if no Clerk auth
-    if (!userId) {
-      const authHeader = request.headers.get('authorization');
-      if (authHeader) {
-        userId = await verifyJWT(authHeader);
-      }
-    }
 
     if (!userId) {
       return NextResponse.json({ error: { message: 'Unauthorized' } }, { status: 401 });

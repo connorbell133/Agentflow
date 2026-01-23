@@ -1,11 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { ProfileCompletionProvider } from '@/providers/ProfileCompletionProvider';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from '@/hooks/auth/use-user';
 import { usePathname, useRouter } from 'next/navigation';
 import * as profileActions from '@/actions/auth/profile';
 
-// Mock Clerk
-jest.mock('@clerk/nextjs', () => ({
+// Mock Better-Auth user hook
+jest.mock('@/hooks/auth/use-user', () => ({
   useUser: jest.fn(),
 }));
 
@@ -31,7 +31,7 @@ jest.mock('@/lib/infrastructure/logger', () => ({
 
 describe('ProfileCompletionProvider', () => {
   const mockPush = jest.fn();
-  
+
   beforeEach(() => {
     jest.clearAllMocks();
     (useRouter as jest.Mock).mockReturnValue({ push: mockPush } as any);
@@ -40,8 +40,8 @@ describe('ProfileCompletionProvider', () => {
 
   it('should render children when user has complete profile', async () => {
     (useUser as jest.Mock).mockReturnValue({
-      user: { id: 'user-123', emailAddresses: [{ emailAddress: 'test@example.com' }] },
-      isLoaded: true,
+      user: { id: 'user-123', email: 'test@example.com' },
+      isUserLoaded: true,
     } as any);
 
     (profileActions.getProfile as jest.Mock).mockResolvedValue({
@@ -69,8 +69,8 @@ describe('ProfileCompletionProvider', () => {
 
   it('should redirect to onboarding when profile is missing', async () => {
     (useUser as jest.Mock).mockReturnValue({
-      user: { id: 'user-456', emailAddresses: [{ emailAddress: 'new@example.com' }] },
-      isLoaded: true,
+      user: { id: 'user-456', email: 'new@example.com' },
+      isUserLoaded: true,
     } as any);
 
     (profileActions.getProfile as jest.Mock).mockResolvedValue({
@@ -91,8 +91,8 @@ describe('ProfileCompletionProvider', () => {
 
   it('should redirect when profile exists but signup not complete', async () => {
     (useUser as jest.Mock).mockReturnValue({
-      user: { id: 'user-789', emailAddresses: [{ emailAddress: 'incomplete@example.com' }] },
-      isLoaded: true,
+      user: { id: 'user-789', email: 'incomplete@example.com' },
+      isUserLoaded: true,
     } as any);
 
     (profileActions.getProfile as jest.Mock).mockResolvedValue({
@@ -121,8 +121,8 @@ describe('ProfileCompletionProvider', () => {
 
     (usePathname as jest.Mock).mockImplementation(() => currentPath);
     (useUser as jest.Mock).mockReturnValue({
-      user: { id: 'user-123', emailAddresses: [{ emailAddress: 'test@example.com' }] },
-      isLoaded: true,
+      user: { id: 'user-123', email: 'test@example.com' },
+      isUserLoaded: true,
     } as any);
 
     (profileActions.getProfile as jest.Mock)
@@ -164,8 +164,8 @@ describe('ProfileCompletionProvider', () => {
   it('should skip check for excluded paths', async () => {
     (usePathname as jest.Mock).mockReturnValue('/sign-in');
     (useUser as jest.Mock).mockReturnValue({
-      user: { id: 'user-123' },
-      isLoaded: true,
+      user: { id: 'user-123', email: 'test@example.com' },
+      isUserLoaded: true,
     } as any);
 
     render(
@@ -183,12 +183,12 @@ describe('ProfileCompletionProvider', () => {
 
   it('should show loading state while checking', () => {
     (useUser as jest.Mock).mockReturnValue({
-      user: { id: 'user-123' },
-      isLoaded: true,
+      user: { id: 'user-123', email: 'test@example.com' },
+      isUserLoaded: true,
     } as any);
 
-    (profileActions.getProfile as jest.Mock).mockImplementation(() => 
-      new Promise(() => {}) // Never resolves
+    (profileActions.getProfile as jest.Mock).mockImplementation(
+      () => new Promise(() => {}) // Never resolves
     );
 
     render(
@@ -202,8 +202,8 @@ describe('ProfileCompletionProvider', () => {
 
   it('should handle errors gracefully', async () => {
     (useUser as jest.Mock).mockReturnValue({
-      user: { id: 'user-error' },
-      isLoaded: true,
+      user: { id: 'user-error', email: 'error@example.com' },
+      isUserLoaded: true,
     } as any);
 
     (profileActions.getProfile as jest.Mock).mockRejectedValue(new Error('Database error'));
@@ -225,7 +225,7 @@ describe('ProfileCompletionProvider', () => {
   it('should not check when user is not loaded', async () => {
     (useUser as jest.Mock).mockReturnValue({
       user: null,
-      isLoaded: false,
+      isUserLoaded: false,
     } as any);
 
     render(

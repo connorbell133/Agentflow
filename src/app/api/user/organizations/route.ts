@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/lib/auth/server';
 import { getOrgsForUser } from '@/actions/organization/organizations';
-import { verifyJWT } from '@/lib/auth/jwt-verify';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -22,22 +21,6 @@ export async function GET(request: NextRequest) {
       hasUserId: !!userId,
       userId: userId?.substring(0, 10) + '...',
     });
-
-    // If no userId from Clerk auth, try JWT verification (for external clients like React Native)
-    if (!userId) {
-      const authHeader = request.headers.get('authorization');
-      console.log('[API/user/organizations GET] No Clerk userId, checking JWT auth header:', {
-        hasAuthHeader: !!authHeader,
-      });
-
-      if (authHeader) {
-        userId = await verifyJWT(authHeader);
-        console.log('[API/user/organizations GET] JWT verification result:', {
-          hasUserId: !!userId,
-          userId: userId?.substring(0, 10) + '...',
-        });
-      }
-    }
 
     if (!userId) {
       console.error('[API/user/organizations GET] No valid authentication found - returning 401');

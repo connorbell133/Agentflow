@@ -1,49 +1,49 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Profile } from "@/lib/supabase/types";
-import { TempOrgRequestForm } from "./TempOrgRequestForm";
-import { CreateOrgForm } from "./CreateOrgForm";
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Profile } from '@/lib/supabase/types';
+import { DirectOrgCreationForm } from './DirectOrgCreationForm';
 
 interface OrgCreationScreenProps {
   user: Profile;
 }
 
-type CreationStep = "form" | "success";
+type CreationStep = 'form' | 'success';
 
 export default function OrgCreationScreen({ user }: OrgCreationScreenProps) {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState<CreationStep>("form");
-  const [createdOrgName, setCreatedOrgName] = useState("");
+  const [currentStep, setCurrentStep] = useState<CreationStep>('form');
+  const [createdOrgName, setCreatedOrgName] = useState('');
 
-  const handleOrgCreated = (org_id: string, orgName: string) => {
+  const handleOrgCreated = (orgName: string) => {
     setCreatedOrgName(orgName);
-    setCurrentStep("success");
+    setCurrentStep('success');
   };
 
   const handleGoToDashboard = () => {
-    router.push("/admin");
+    // Force a full page refresh to reload admin dashboard with new org
+    window.location.href = '/admin';
   };
 
   const handleCreateAnother = () => {
-    setCurrentStep("form");
-    setCreatedOrgName("");
+    setCurrentStep('form');
+    setCreatedOrgName('');
   };
 
   // Success State
-  if (currentStep === "success") {
+  if (currentStep === 'success') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <div className="w-full max-w-lg space-y-6">
-          <div className="text-center space-y-4">
-            <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto">
+          <div className="space-y-4 text-center">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary">
               <svg
-                className="w-10 h-10 text-primary-foreground"
+                className="h-10 w-10 text-primary-foreground"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -80,7 +80,7 @@ export default function OrgCreationScreen({ user }: OrgCreationScreenProps) {
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-primary"></div>
                   <div>
                     <h4 className="font-medium text-foreground">Invite Team Members</h4>
                     <p className="text-sm text-muted-foreground">
@@ -90,7 +90,7 @@ export default function OrgCreationScreen({ user }: OrgCreationScreenProps) {
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-primary"></div>
                   <div>
                     <h4 className="font-medium text-foreground">Set Up Groups</h4>
                     <p className="text-sm text-muted-foreground">
@@ -100,7 +100,7 @@ export default function OrgCreationScreen({ user }: OrgCreationScreenProps) {
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-primary"></div>
                   <div>
                     <h4 className="font-medium text-foreground">Configure AI Models</h4>
                     <p className="text-sm text-muted-foreground">
@@ -127,17 +127,15 @@ export default function OrgCreationScreen({ user }: OrgCreationScreenProps) {
     );
   }
 
-  const requestMode = true; // Set to true to show org request form, false to show direct creation
-
-  // Form State
+  // Form State - Direct creation enabled (no approval needed)
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-2xl space-y-6">
         {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center mx-auto">
+        <div className="space-y-4 text-center">
+          <div className="bg-primary/10 border-primary/20 mx-auto flex h-16 w-16 items-center justify-center rounded-full border">
             <svg
-              className="w-8 h-8 text-primary"
+              className="h-8 w-8 text-primary"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -152,42 +150,29 @@ export default function OrgCreationScreen({ user }: OrgCreationScreenProps) {
           </div>
 
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold text-foreground">
-              Create Your Organization
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-md mx-auto">
+            <h1 className="text-4xl font-bold text-foreground">Create Your Organization</h1>
+            <p className="mx-auto max-w-md text-xl text-muted-foreground">
               Set up your organization to start collaborating with your team on AgentFlow
             </p>
           </div>
         </div>
 
-        {/* Main Form Card */}
-        {requestMode ? (
-          <TempOrgRequestForm user={user} />
-        ) : (
-          <CreateOrgForm
-            userId={user.id}
-            onSuccess={handleOrgCreated}
-            onCancel={() => router.push("/admin")}
-            className="shadow-xl"
-          />
-        )}
+        {/* Main Form Card - Direct Creation */}
+        <DirectOrgCreationForm user={user} onSuccess={handleOrgCreated} />
 
         {/* Footer */}
-        {!requestMode && (
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">
-              By creating an organization, you agree to our{" "}
-              <a href="/terms" className="text-primary hover:underline">
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a href="/privacy" className="text-primary hover:underline">
-                Privacy Policy
-              </a>
-            </p>
-          </div>
-        )}
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">
+            By creating an organization, you agree to our{' '}
+            <a href="/terms" className="text-primary hover:underline">
+              Terms of Service
+            </a>{' '}
+            and{' '}
+            <a href="/privacy" className="text-primary hover:underline">
+              Privacy Policy
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );

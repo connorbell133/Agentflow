@@ -1,4 +1,5 @@
 # AgentFlow
+
 ### Enterprise AI Connection and Distribution Platform
 
 **Connect your AI endpoints, workflows, or agent builders, then distribute them across organizations with built-in access control and data isolation.**
@@ -24,6 +25,7 @@
 **The Problem:** You've built powerful AI agents, but sharing them means building chat UIs, authentication, multi-tenant infrastructure, and access control. That's 3-6 months of development before your first user.
 
 **The Solution:** AgentFlow provides enterprise-ready infrastructure for AI distribution. Connect your HTTP endpoint with a YAML file and instantly get:
+
 - ✅ Production-ready chat interface
 - ✅ Organization-based multi-tenancy
 - ✅ Group-based access control
@@ -56,9 +58,10 @@ Perfect for teams who want to focus on AI, not DevOps.
 ### Option 2: Self-Hosted (Open Source)
 
 **Prerequisites:**
+
 - Node.js 18+
 - Supabase CLI ([Installation](https://supabase.com/docs/guides/cli))
-- Clerk account ([Sign up](https://clerk.com))
+- PostgreSQL database (local or cloud)
 
 **5-Minute Setup:**
 
@@ -70,7 +73,7 @@ npm install
 
 # Configure environment
 cp .env.example .env.local
-# Edit .env.local with your Supabase and Clerk credentials
+# Edit .env.local with your Supabase and database credentials
 
 # Start database
 supabase start
@@ -89,21 +92,23 @@ npm run dev
 ## 🎯 What You Can Do
 
 ### Connect Any AI Endpoint
+
 ```yaml
 # Simple YAML configuration
-name: "GPT-4"
-endpoint: "https://api.openai.com/v1/chat/completions"
+name: 'GPT-4'
+endpoint: 'https://api.openai.com/v1/chat/completions'
 headers:
-  Authorization: "Bearer {{api_key}}"
+  Authorization: 'Bearer {{api_key}}'
 request_schema:
-  model: "gpt-4"
+  model: 'gpt-4'
   messages:
-    - role: "user"
-      content: "{{message}}"
-response_path: "choices[0].message.content"
+    - role: 'user'
+      content: '{{message}}'
+response_path: 'choices[0].message.content'
 ```
 
 **Works with:**
+
 - Direct APIs (OpenAI, Anthropic, etc.)
 - Workflows (n8n, Make.com, Zapier)
 - Custom agents (LangChain, CrewAI, AutoGen)
@@ -162,6 +167,7 @@ Build LangChain agent → Deploy to Cloud Run → Connect to AgentFlow → Profe
 ## ⚡ Features
 
 ### ✅ Implemented
+
 - 🔌 **AI Connections:** Connect any HTTP endpoint with YAML config
 - 👥 **Multi-Tenant:** Complete organization-based data isolation
 - 🔐 **Access Control:** Group-based permissions with Owner/Admin/Guest roles
@@ -170,6 +176,7 @@ Build LangChain agent → Deploy to Cloud Run → Connect to AgentFlow → Profe
 - 🔒 **Security:** Row-Level Security, encrypted API keys, audit trails
 
 ### 🔜 Coming Soon
+
 - 📈 **Analytics:** Token usage tracking, cost analysis, usage dashboards
 - 📎 **Multimedia:** File uploads, voice input/output, image analysis
 - 👥 **Collaboration:** Conversation sharing, team mentions, real-time collab
@@ -182,33 +189,37 @@ Build LangChain agent → Deploy to Cloud Run → Connect to AgentFlow → Profe
 ## 📖 Documentation
 
 ### Getting Started
-| Guide | Time | Description |
-|-------|------|-------------|
-| [Installation](./docs/getting-started/INSTALLATION.md) | 30 min | Complete setup walkthrough |
-| [Clerk Setup](./docs/getting-started/CLERK_SETUP.md) | 15 min | Configure authentication |
-| [First Endpoint](./docs/getting-started/FIRST_ENDPOINT.md) | 15 min | Connect your first AI |
-| [Troubleshooting](./docs/getting-started/TROUBLESHOOTING.md) | - | Common issues and fixes |
+
+| Guide                                                        | Time   | Description                |
+| ------------------------------------------------------------ | ------ | -------------------------- |
+| [Installation](./docs/getting-started/INSTALLATION.md)       | 30 min | Complete setup walkthrough |
+| [Authentication Setup](./docs/getting-started/AUTH_SETUP.md) | 15 min | Configure Better-Auth      |
+| [First Endpoint](./docs/getting-started/FIRST_ENDPOINT.md)   | 15 min | Connect your first AI      |
+| [Troubleshooting](./docs/getting-started/TROUBLESHOOTING.md) | -      | Common issues and fixes    |
 
 ### Guides
-| Guide | Description |
-|-------|-------------|
-| [YAML Configuration](./docs/guides/YAML_CONFIG.md) | Complete configuration reference |
-| [Access Control](./docs/guides/ACCESS_CONTROL.md) | Groups, roles, permissions |
-| [Endpoint Integration](./docs/guides/ENDPOINT_INTEGRATION.md) | Build compatible endpoints |
-| [Multi-Tenant Setup](./docs/guides/MULTI_TENANT.md) | Organization architecture |
+
+| Guide                                                         | Description                      |
+| ------------------------------------------------------------- | -------------------------------- |
+| [YAML Configuration](./docs/guides/YAML_CONFIG.md)            | Complete configuration reference |
+| [Access Control](./docs/guides/ACCESS_CONTROL.md)             | Groups, roles, permissions       |
+| [Endpoint Integration](./docs/guides/ENDPOINT_INTEGRATION.md) | Build compatible endpoints       |
+| [Multi-Tenant Setup](./docs/guides/MULTI_TENANT.md)           | Organization architecture        |
 
 ### Examples
-| Platform | Configuration |
-|----------|---------------|
-| OpenAI GPT | [openai-gpt-config.yaml](./examples/openai-gpt-config.yaml) |
+
+| Platform         | Configuration                                                           |
+| ---------------- | ----------------------------------------------------------------------- |
+| OpenAI GPT       | [openai-gpt-config.yaml](./examples/openai-gpt-config.yaml)             |
 | Anthropic Claude | [anthropic-claude-config.yaml](./examples/anthropic-claude-config.yaml) |
-| n8n Workflows | [n8n-workflow-config.yaml](./examples/n8n-workflow-config.yaml) |
-| LangChain Agents | [langchain-agent-config.yaml](./examples/langchain-agent-config.yaml) |
-| Make.com | [make-workflow-config.yaml](./examples/make-workflow-config.yaml) |
+| n8n Workflows    | [n8n-workflow-config.yaml](./examples/n8n-workflow-config.yaml)         |
+| LangChain Agents | [langchain-agent-config.yaml](./examples/langchain-agent-config.yaml)   |
+| Make.com         | [make-workflow-config.yaml](./examples/make-workflow-config.yaml)       |
 
 → [All Examples with Setup Instructions](./examples/)
 
 ### Additional Documentation
+
 - [Why AgentFlow](./docs/WHY_AGENTFLOW.md) - Problem/solution overview
 - [Use Cases](./docs/USE_CASES.md) - Real-world scenarios
 - [Features](./docs/FEATURES.md) - Complete feature list
@@ -222,6 +233,7 @@ Build LangChain agent → Deploy to Cloud Run → Connect to AgentFlow → Profe
 ## 🛠️ Tech Stack
 
 **Frontend**
+
 - Next.js 14 (App Router)
 - React 18 (Server Components)
 - TypeScript
@@ -229,12 +241,14 @@ Build LangChain agent → Deploy to Cloud Run → Connect to AgentFlow → Profe
 - Radix UI
 
 **Backend**
+
 - PostgreSQL (via Supabase)
-- Clerk (Authentication)
+- Supabase Auth (Authentication)
 - Row-Level Security (RLS)
 - Server Actions
 
 **Infrastructure**
+
 - Supabase (Database & Auth)
 - Vercel (Recommended hosting)
 - Docker (Local development)
@@ -301,10 +315,12 @@ npm run start
 We welcome contributions! AgentFlow is open source (AGPL-3.0).
 
 **Before contributing:**
+
 - ⚠️ All contributors must sign our [Contributor License Agreement (CLA)](CLA.md)
 - Our bot will guide you through this on your first PR
 
 **How to contribute:**
+
 1. Fork the repository
 2. Create feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit changes (`git commit -m 'Add amazing feature'`)
@@ -332,6 +348,7 @@ We welcome contributions! AgentFlow is open source (AGPL-3.0).
 This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
 
 **This means:**
+
 - ✅ You can use, modify, and distribute this software
 - ✅ You can use it commercially
 - ⚠️ If you modify and distribute it, you must share your source code under AGPL
@@ -344,8 +361,9 @@ See the [LICENSE](./LICENSE) file for full details.
 ## 🙏 Acknowledgments
 
 Built with:
+
 - [Next.js](https://nextjs.org/) - React framework
-- [Clerk](https://clerk.com/) - Authentication
+- [Better-Auth](https://www.better-auth.com/) - Authentication
 - [Supabase](https://supabase.com/) - Database & backend
 - [Tailwind CSS](https://tailwindcss.com/) - Styling
 - [Radix UI](https://www.radix-ui.com/) - UI components
@@ -355,11 +373,13 @@ Built with:
 ## 🗺️ Roadmap
 
 **Current Focus:**
+
 - Analytics and usage tracking
 - Multimedia support (files, voice, images)
 - Mobile applications
 
 **Upcoming:**
+
 - Advanced collaboration features
 - Enterprise SSO/SAML
 - Custom branding/white-label

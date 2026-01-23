@@ -10,7 +10,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { type UIMessage, DefaultChatTransport } from 'ai';
-import { useAuth } from '@clerk/nextjs';
+import { useUser } from '@/hooks/auth/use-user';
 import { type Model } from '@/lib/supabase/types';
 import { getConversation, getAllMessages } from '@/actions/chat/conversations';
 import { createLogger } from '@/lib/infrastructure/logger';
@@ -60,7 +60,8 @@ export interface UseAIChatReturn {
  * Hook for AI SDK chat with conversation management
  */
 export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
-  const { userId } = useAuth();
+  const { user } = useUser();
+  const userId = user?.id;
   const [currentModel, setCurrentModel] = useState<Model | undefined>(options.model);
   const [conversationId, setConversationId] = useState<string | undefined>(options.conversationId);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
@@ -96,7 +97,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 
           // Send messages in v6 format with parts (not content)
           // DefaultChatTransport already provides messages in v6 format with parts
-          const formattedMessages = messages.map((m) => {
+          const formattedMessages = messages.map(m => {
             const base = {
               id: m.id,
               role: m.role,
@@ -113,11 +114,11 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
             org_id: orgId,
             conversationId: convId,
             messageCount: formattedMessages.length,
-            messages: formattedMessages.map(m => ({ 
-              id: m.id, 
-              role: m.role, 
+            messages: formattedMessages.map(m => ({
+              id: m.id,
+              role: m.role,
               partsCount: m.parts?.length || 0,
-              parts: m.parts 
+              parts: m.parts,
             })),
           });
 
@@ -126,9 +127,9 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
             org_id: orgId,
             conversationId: convId,
             messageCount: formattedMessages.length,
-            messages: formattedMessages.map(m => ({ 
-              role: m.role, 
-              partsCount: m.parts?.length || 0 
+            messages: formattedMessages.map(m => ({
+              role: m.role,
+              partsCount: m.parts?.length || 0,
             })),
           });
 
@@ -171,13 +172,13 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
   } = useChat({
     transport,
     onFinish: ({ message }) => {
-      logger.info('Message finished', { 
-        messageId: message.id, 
+      logger.info('Message finished', {
+        messageId: message.id,
         role: message.role,
         parts: message.parts,
-        partsCount: message.parts?.length || 0
+        partsCount: message.parts?.length || 0,
       });
-      
+
       // Log tool invocations if present
       if (message.parts) {
         const toolParts = message.parts.filter((p: any) => p.type === 'tool-invocation');
@@ -186,7 +187,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
         }
       }
     },
-    onError: (error) => {
+    onError: error => {
       logger.error('Chat error', { error });
       console.error('❌ [useAIChat] Chat error:', error);
       options.onError?.(error);
@@ -203,7 +204,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
         lastMessageParts: lastMessage.parts,
         lastMessagePartsCount: lastMessage.parts?.length || 0,
       });
-      
+
       // Check for tool invocations
       if (lastMessage.parts) {
         const toolParts = lastMessage.parts.filter((p: any) => p.type === 'tool-invocation');
@@ -282,10 +283,10 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
         const dbMessages = await getAllMessages(convId);
 
         // Convert database messages to UI format
-        const uiMessages: UIMessage[] = dbMessages.map((msg) => {
+        const uiMessages: UIMessage[] = dbMessages.map(msg => {
           // Use ai_sdk_id if available (for feedback mapping), fallback to database UUID
           const messageId = msg.ai_sdk_id || msg.id;
-          
+
           return createUIMessage({
             id: messageId,
             role: msg.role as 'user' | 'assistant' | 'system',
@@ -294,10 +295,13 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
           });
         });
 
-        console.log('🔵 [loadConversation] Loaded messages with IDs:', uiMessages.map(m => ({
-          id: m.id,
-          role: m.role,
-        })));
+        console.log(
+          '🔵 [loadConversation] Loaded messages with IDs:',
+          uiMessages.map(m => ({
+            id: m.id,
+            role: m.role,
+          }))
+        );
 
         setConversationId(convId);
         setMessages(uiMessages);

@@ -8,6 +8,7 @@ See @../README.md for product overview
 See @../package.json for available scripts and dependencies
 
 ### Core Directories
+
 See @app/CLAUDE.md for Next.js app router structure  
 See @components/CLAUDE.md for React component library
 See @db/CLAUDE.md for database schema and ORM
@@ -20,6 +21,7 @@ See @utils/CLAUDE.md for helper functions
 ## Tech Stack
 
 ### Frontend
+
 - **Next.js 14** - React framework with App Router
 - **TypeScript** - Type safety and better DX
 - **Tailwind CSS** - Utility-first styling
@@ -27,18 +29,21 @@ See @utils/CLAUDE.md for helper functions
 - **Framer Motion** - Animations
 
 ### Backend
+
 - **PostgreSQL** - Primary database (via Supabase)
-- **Supabase** - Database client with RLS
-- **Clerk** - Authentication and user management
+- **Supabase** - Database, auth, and real-time subscriptions
+- **Supabase Auth** - Native authentication and session management
 - **Upstash** - Redis for rate limiting
 - **Server Actions** - Data mutations
 
 ### AI Integration
+
 - **OpenAI API** - GPT models
 - **Anthropic API** - Claude models
 - **Custom providers** - Extensible model system
 
 ## Project Structure
+
 ```
 src/
 ├── app/              # Next.js app router pages
@@ -62,6 +67,7 @@ src/
 ## Development Workflow
 
 ### Getting Started
+
 ```bash
 # Install dependencies
 npm install
@@ -77,6 +83,7 @@ npm run dev
 ```
 
 ### Common Tasks
+
 ```bash
 # Development
 npm run dev              # Start dev server
@@ -85,7 +92,7 @@ npm run start           # Run production server
 
 # Database (Supabase)
 supabase migration new <name>  # Create migration
-npm run db:reset               # Reset local database  
+npm run db:reset               # Reset local database
 npm run db:push                # Push to remote
 npm run db:types               # Generate types
 npm run db:studio              # Open Supabase Studio
@@ -105,19 +112,22 @@ npm run type-check     # TypeScript check
 ## Key Patterns
 
 ### Authentication
+
 ```typescript
-import { auth } from '@clerk/nextjs';
+import { auth } from '@/lib/auth/server';
 
 // In server components/actions
-const { userId, org_id } = auth();
+const { userId, org_id } = await auth();
 if (!userId) throw new Error('Unauthorized');
 
 // In client components
-import { useAuth } from '@/hooks/auth/useAuth';
-const { user, isAuthenticated } = useAuth();
+import { useSession } from '@/lib/auth/client-helpers';
+const { data: session } = useSession();
+const user = session?.user;
 ```
 
 ### Data Fetching
+
 ```typescript
 // Server Components
 async function Page() {
@@ -132,6 +142,7 @@ function ClientComponent() {
 ```
 
 ### Form Handling
+
 ```typescript
 // With Server Actions
 <form action={serverAction}>
@@ -144,6 +155,7 @@ const { register, handleSubmit } = useForm();
 ```
 
 ### Error Handling
+
 ```typescript
 // Error boundaries for components
 <ErrorBoundary fallback={<ErrorPage />}>
@@ -161,18 +173,21 @@ try {
 ## Security Practices
 
 ### Authentication & Authorization
+
 - All routes protected by Clerk middleware
 - Role-based access control (RBAC)
 - Organization-scoped data access
 - API key encryption at rest
 
 ### Data Protection
+
 - Input validation with Zod
 - SQL injection prevention via parameterized queries
 - XSS protection with DOMPurify
 - CSRF protection built-in
 
 ### Rate Limiting
+
 ```typescript
 import { rateLimit } from '@/lib/rate-limit';
 
@@ -183,6 +198,7 @@ if (!success) throw new Error('Rate limited');
 ## Performance Optimization
 
 ### Frontend
+
 - React component memoization
 - Dynamic imports for code splitting
 - Image optimization with next/image
@@ -190,28 +206,30 @@ if (!success) throw new Error('Rate limited');
 - Bundle analysis
 
 ### Backend
+
 - Database query optimization
 - Response caching
 - Connection pooling
 - Background job processing
 
 ### Monitoring
+
 - Error tracking with Sentry
 - Performance monitoring
 - Custom metrics tracking
 - Health check endpoints
 
 ## Environment Configuration
+
 ```env
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321  # Local dev
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-# Authentication
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
-CLERK_SECRET_KEY=sk_...
-CLERK_WEBHOOK_SECRET=whsec_...
+# Authentication (Better-Auth)
+DATABASE_URL=postgresql://user:password@localhost:5432/database
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # Security
 CRON_SECRET=your_random_32_char_string
@@ -228,6 +246,7 @@ NEXT_PUBLIC_ENABLE_FILES=true
 ## Deployment
 
 ### Production Build
+
 ```bash
 # Build application
 npm run build
@@ -237,6 +256,7 @@ npm run start
 ```
 
 ### Docker Support
+
 ```bash
 # Build image
 docker build -t chat-platform .
@@ -246,6 +266,7 @@ docker run -p 3000:3000 chat-platform
 ```
 
 ## Contributing
+
 - Follow TypeScript best practices
 - Write tests for new features
 - Update documentation
@@ -253,6 +274,7 @@ docker run -p 3000:3000 chat-platform
 - Use conventional commits
 
 ## Debugging
+
 ```bash
 # Enable debug logging
 DEBUG=* npm run dev

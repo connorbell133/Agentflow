@@ -1,17 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from '@/hooks/auth/use-user';
 import { getUserInvites } from '@/actions/organization/invites';
 import { Invite } from '@/lib/supabase/types';
 
 export const usePendingInvites = () => {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, isLoaded } = useUser();
+  const { user, isUserLoaded } = useUser();
+  const isLoaded = isUserLoaded;
   const fetchedEmailRef = useRef<string | null>(null);
   const fetchingRef = useRef<boolean>(false);
 
   useEffect(() => {
-    const email = user?.primaryEmailAddress?.emailAddress;
+    const email = user?.email;
 
     // Exit early if not loaded or no email
     if (!isLoaded) {
@@ -47,10 +48,10 @@ export const usePendingInvites = () => {
     };
 
     fetchInvites();
-  }, [isLoaded, user?.primaryEmailAddress?.emailAddress]);
+  }, [isLoaded, user?.email]);
 
   const refetch = async () => {
-    const email = user?.primaryEmailAddress?.emailAddress;
+    const email = user?.email;
     if (!email || fetchingRef.current) return;
 
     fetchingRef.current = true;
@@ -73,6 +74,6 @@ export const usePendingInvites = () => {
   return {
     invites,
     loading,
-    refetch
+    refetch,
   };
 };

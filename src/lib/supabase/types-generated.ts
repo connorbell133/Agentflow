@@ -74,13 +74,6 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "conversations_user_fkey"
-            columns: ["user"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       group_map: {
@@ -111,13 +104,6 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "group_map_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -251,13 +237,6 @@ export type Database = {
             columns: ["model_id"]
             isOneToOne: false
             referencedRelation: "models"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "message_feedback_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -466,18 +445,21 @@ export type Database = {
           created_at: string
           id: string
           org_id: string
+          role: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           org_id: string
+          role?: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           org_id?: string
+          role?: string
           user_id?: string
         }
         Relationships: [
@@ -486,13 +468,6 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "org_map_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -519,15 +494,7 @@ export type Database = {
           owner?: string | null
           status?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "organizations_owner_fkey"
-            columns: ["owner"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       product_tiers: {
         Row: {

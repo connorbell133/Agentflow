@@ -13,7 +13,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/lib/auth/server';
 import { z } from 'zod';
 import { type UIMessage } from 'ai';
 
@@ -21,7 +21,6 @@ import { getModelData } from '@/actions/chat/models';
 import { createConvo, getConversation } from '@/actions/chat/conversations';
 import { createLogger } from '@/lib/infrastructure/logger';
 import { apiCallLimiter, checkRateLimit } from '@/lib/security/rate-limiter';
-import { verifyJWT } from '@/lib/auth/jwt-verify';
 import {
   routeToEndpoint,
   saveUserMessage,
@@ -88,7 +87,9 @@ async function getOrCreateConversation(
   }
 
   // Create new conversation
-  const title = (firstMessage || 'New conversation').substring(0, 50) + ((firstMessage?.length || 0) > 50 ? '...' : '');
+  const title =
+    (firstMessage || 'New conversation').substring(0, 50) +
+    ((firstMessage?.length || 0) > 50 ? '...' : '');
   const newConversation = await createConvo({
     user: userId,
     model: model_id,
@@ -115,15 +116,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Authentication: Try Clerk first, then JWT
-    let userId = (await auth()).userId;
-
-    if (!userId) {
-      const authHeader = req.headers.get('authorization');
-      if (authHeader) {
-        userId = await verifyJWT(authHeader);
-      }
-    }
+    // Authentication via Better-Auth middleware
+    const { userId } = await auth();
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -150,7 +144,12 @@ export async function POST(req: NextRequest) {
       messages: messages.map(m => ({
         role: m.role,
         partsCount: m.parts?.length || 0,
-        textPreview: m.parts?.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('').substring(0, 100) || ''
+        textPreview:
+          m.parts
+            ?.filter((p: any) => p.type === 'text')
+            .map((p: any) => p.text)
+            .join('')
+            .substring(0, 100) || '',
       })),
     });
 
@@ -167,10 +166,10 @@ export async function POST(req: NextRequest) {
       endpoint: modelData.endpoint,
       endpoint_type: modelData.endpoint_type,
       method: modelData.method,
-    })
+    });
 
     // Get the last user message
-    const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
+    const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
     if (!lastUserMessage) {
       return NextResponse.json({ error: 'No user message provided' }, { status: 400 });
     }
@@ -203,7 +202,7 @@ export async function POST(req: NextRequest) {
     const routableModel = toRoutableModel(modelData);
 
     // Convert messages to UIMessage format for router
-    const uiMessages: UIMessage[] = messages.map((m) =>
+    const uiMessages: UIMessage[] = messages.map(m =>
       createUIMessage({
         id: m.id,
         role: m.role,

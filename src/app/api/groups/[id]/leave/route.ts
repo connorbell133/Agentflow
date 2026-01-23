@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export async function DELETE(
   request: NextRequest,
@@ -12,10 +12,7 @@ export async function DELETE(
     const userId = authResult.userId;
 
     if (!userId) {
-      return NextResponse.json(
-        { error: { message: "Unauthorized" } },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: { message: 'Unauthorized' } }, { status: 401 });
     }
 
     const supabase = await createSupabaseServerClient();
@@ -29,26 +26,23 @@ export async function DELETE(
       .select();
 
     if (error) {
-      console.error("Error leaving group:", error);
+      console.error('Error leaving group:', error);
       throw error;
     }
 
     if (!result || result.length === 0) {
       return NextResponse.json(
-        { error: { message: "User not found in this group" } },
+        { error: { message: 'User not found in this group' } },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: "Successfully left the group"
+      message: 'Successfully left the group',
     });
   } catch (error) {
-    console.error("Error leaving group:", error);
-    return NextResponse.json(
-      { error: { message: "Failed to leave group" } },
-      { status: 500 }
-    );
+    console.error('Error leaving group:', error);
+    return NextResponse.json({ error: { message: 'Failed to leave group' } }, { status: 500 });
   }
 }

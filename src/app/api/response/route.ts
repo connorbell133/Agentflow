@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/lib/auth/server';
 import { getModelData } from '@/actions/chat/models';
 import { createLogger } from '@/lib/infrastructure/logger';
 import { Model } from '@/lib/supabase/types';
@@ -7,7 +7,6 @@ import { RequestBody, ApiResponse } from '@/types/api/response.types';
 import { buildBodyJson, getByPath } from '@/lib/api/model-utils';
 import { z } from 'zod';
 import { apiCallLimiter, checkRateLimit } from '@/lib/security/rate-limiter';
-import { verifyJWT } from '@/lib/auth/jwt-verify';
 
 const logger = createLogger('api-response');
 
@@ -31,9 +30,9 @@ async function callCustomEndpoint(modelData: Model, body: any): Promise<ApiRespo
   const hasBody = method !== 'GET' && method !== 'HEAD';
   const headers = hasBody
     ? {
-      'Content-Type': 'application/json',
-      ...((modelData.headers as Record<string, string>) || {}),
-    }
+        'Content-Type': 'application/json',
+        ...((modelData.headers as Record<string, string>) || {}),
+      }
     : { ...((modelData.headers as Record<string, string>) || {}) };
 
   const fetchInit: RequestInit = {
@@ -94,7 +93,7 @@ export async function POST(req: NextRequest) {
       { error: 'Too many requests, please try again later' },
       {
         status: 429,
-        headers: rateLimitResult.headers
+        headers: rateLimitResult.headers,
       }
     );
   }
@@ -103,19 +102,8 @@ export async function POST(req: NextRequest) {
     // Try to get userId from Clerk auth (for same-domain requests)
     let userId = (await auth()).userId;
 
-    // If no userId from Clerk auth, try JWT verification (for external clients like React Native)
     if (!userId) {
-      const authHeader = req.headers.get('authorization');
-      if (authHeader) {
-        userId = await verifyJWT(authHeader);
-      }
-    }
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get request body and validate with Zod
@@ -125,7 +113,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: 'Validation failed',
-          issues: validation.error.flatten()
+          issues: validation.error.flatten(),
         },
         { status: 400 }
       );
@@ -136,10 +124,7 @@ export async function POST(req: NextRequest) {
     // Get and validate model data
     const modelData = await getModelData(model);
     if (!modelData.id) {
-      return NextResponse.json(
-        { error: 'Model data not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Model data not found' }, { status: 404 });
     }
 
     // Build payload and validate
@@ -149,23 +134,19 @@ export async function POST(req: NextRequest) {
     const response = await callCustomEndpoint(modelData, body_payload);
 
     return NextResponse.json(response);
-
   } catch (error) {
     logger.error('Error processing request:', error);
 
     // Return appropriate error status based on error type
     if (error instanceof Error) {
-      const status = error.message.includes('validation') ? 400 :
-        error.message.includes('not found') ? 404 : 500;
-      return NextResponse.json(
-        { error: error.message },
-        { status }
-      );
+      const status = error.message.includes('validation')
+        ? 400
+        : error.message.includes('not found')
+          ? 404
+          : 500;
+      return NextResponse.json({ error: error.message }, { status });
     }
 
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

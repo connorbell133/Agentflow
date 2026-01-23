@@ -1,5 +1,5 @@
-import { NextResponse, NextRequest } from "next/server";
-import { auth } from '@clerk/nextjs/server';
+import { NextResponse, NextRequest } from 'next/server';
+import { auth } from '@/lib/auth/server';
 import { buildBodyJson } from '@/lib/api/model-utils';
 import { createLogger } from '@/lib/infrastructure/logger';
 
@@ -30,19 +30,17 @@ function buildTemplateVars(variables: any) {
     conversation_id: variables?.conversation_id ?? 'preview',
     time: new Date().toISOString(),
     content: variables?.content ?? '',
-    user: variables?.user
+    user: variables?.user,
   };
 }
 
 async function callEndpoint(endpoint: string, headers: any, body: any, method?: string) {
-  const normalizedMethod = (method || "POST").toUpperCase();
-  const hasBody = normalizedMethod !== "GET" && normalizedMethod !== "HEAD";
+  const normalizedMethod = (method || 'POST').toUpperCase();
+  const hasBody = normalizedMethod !== 'GET' && normalizedMethod !== 'HEAD';
 
   const requestInit: RequestInit = {
     method: normalizedMethod,
-    headers: hasBody
-      ? { "Content-Type": "application/json", ...headers }
-      : { ...headers },
+    headers: hasBody ? { 'Content-Type': 'application/json', ...headers } : { ...headers },
   };
 
   if (hasBody && body !== undefined) {
@@ -98,24 +96,18 @@ export async function POST(req: NextRequest) {
     const { userId } = await auth();
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const payload = await req.json();
     endpoint = payload.endpoint;
-    method = payload.method || "POST";
+    method = payload.method || 'POST';
     bodyHeaders = payload.headers;
     body_config = payload.body_config;
     variables = payload.variables;
 
     if (!endpoint) {
-      return NextResponse.json(
-        { error: 'Endpoint is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Endpoint is required' }, { status: 400 });
     }
 
     // Build request body
@@ -125,7 +117,6 @@ export async function POST(req: NextRequest) {
     // Call endpoint and return response
     const data = await callEndpoint(endpoint, bodyHeaders || {}, outgoingBody, method);
     return NextResponse.json(data);
-
   } catch (error) {
     logger.error('API error:', {
       error,

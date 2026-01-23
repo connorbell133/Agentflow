@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/lib/auth/server';
 import { requireAdmin } from '@/lib/auth/permissions';
 
 export async function POST(req: Request) {
   try {
-    const { userId, orgId } = await auth();
+    const { userId, org_id } = await auth();
 
     // Check admin permissions
-    await requireAdmin(userId, orgId ?? null);
+    await requireAdmin(userId, org_id ?? null);
 
     // Your existing logic here
     const body = await req.json();
