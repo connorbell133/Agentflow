@@ -428,7 +428,12 @@ export const TestEndpointStepEnhanced: React.FC<TestEndpointStepEnhancedProps> =
 
       {/* Test Button */}
       <div className="flex gap-3">
-        <Button type="button" onClick={handleTest} disabled={isTesting || !state.endpoint}>
+        <Button
+          type="button"
+          onClick={handleTest}
+          disabled={isTesting || !state.endpoint}
+          data-testid="wizard-button-test-endpoint"
+        >
           {isTesting ? (
             <>
               <span className="mr-2 animate-spin">⏳</span>

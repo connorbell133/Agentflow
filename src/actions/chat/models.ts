@@ -172,10 +172,10 @@ export async function updateModel(model: Model) {
       // AI SDK 6 Routing fields
       endpoint_type: (model as any)?.endpoint_type,
       stream_config: (model as any)?.stream_config,
-      // Template Tracking fields (commented out until database migration)
-      // template_id: (model as any)?.template_id,
-      // template_modified_fields: (model as any)?.template_modified_fields,
-      // template_mode: (model as any)?.template_mode,
+      // Template Tracking fields
+      template_id: (model as any)?.template_id,
+      template_modified_fields: (model as any)?.template_modified_fields,
+      template_mode: (model as any)?.template_mode,
     });
 
     // Invalidate related cache entries

@@ -111,6 +111,7 @@ export const ResponseHandlingStep: React.FC<ResponseHandlingStepProps> = ({
                     e.stopPropagation();
                   }
                 }}
+                data-testid="wizard-input-response-path"
               />
               <HelpText>
                 Path to the text response in the JSON. Examples: <code>result</code>,{' '}

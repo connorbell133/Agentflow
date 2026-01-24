@@ -132,6 +132,7 @@ export const RequestConfigurationStep: React.FC<RequestConfigurationStepProps> =
                 null,
                 2
               )}
+              data-testid="wizard-textarea-body-config"
             />
             {validation && !validation.isValid && (
               <p className="mt-2 text-sm text-red-600">

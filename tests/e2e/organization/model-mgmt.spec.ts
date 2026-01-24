@@ -266,7 +266,7 @@ test.describe('Model Management', () => {
           timeout: 10000,
         });
 
-        // Click "Start from Scratch" to proceed to basic info
+        // Click "Start from Scratch" to proceed to connection setup
         const startFromScratchButton = page.getByRole('button', { name: /start from scratch/i });
         await expect(startFromScratchButton).toBeVisible({ timeout: 10000 });
         await startFromScratchButton.click();
@@ -344,8 +344,20 @@ test.describe('Model Management', () => {
         await expect(addButton).toBeEnabled({ timeout: 10000 });
         await addButton.click();
 
-        // Step 1: Basic Info - Match YAML exactly
-        await expect(page.getByTestId('wizard-step-title-basic')).toBeVisible({ timeout: 10000 });
+        // Step 0: Template Selection (for new models)
+        await expect(page.getByTestId('wizard-step-title-template')).toBeVisible({
+          timeout: 10000,
+        });
+
+        // Click "Start from Scratch" to proceed to connection setup
+        const startFromScratchButton = page.getByRole('button', { name: /start from scratch/i });
+        await expect(startFromScratchButton).toBeVisible({ timeout: 10000 });
+        await startFromScratchButton.click();
+
+        // Step 1: Connection Setup - Match YAML exactly
+        await expect(page.getByTestId('wizard-step-title-connection')).toBeVisible({
+          timeout: 10000,
+        });
         await page.getByTestId('wizard-input-name').fill(manualModelName);
         await page.getByTestId('wizard-input-model-id').fill('openai-gpt-4.1');
         await page
@@ -357,6 +369,12 @@ test.describe('Model Management', () => {
             'Direct integration with OpenAI GPT-4.1 for advanced conversational AI capabilities'
           );
 
+        // Select endpoint type (Webhook for OpenAI)
+        // The endpoint type radio buttons don't have test IDs, so we'll use role-based selection
+        // Default should be webhook, but let's ensure it's selected
+        const webhookOption = page.locator('input[type="radio"][value="webhook"]');
+        await webhookOption.check();
+
         // Add headers from YAML
         await page.getByTestId('wizard-button-add-header').click();
         await page.getByTestId('wizard-input-header-key-0').fill('Authorization');
@@ -367,6 +385,10 @@ test.describe('Model Management', () => {
         await page.getByTestId('wizard-input-header-value-1').fill('application/json');
 
         // Add suggestion prompts from YAML (UI allows max 3, so we'll add first 3)
+        // Expand Advanced Options first
+        const advancedOptions = page.locator('details summary');
+        await advancedOptions.click();
+
         const suggestionPrompts = [
           'Generate creative marketing copy for a new product launch',
           'Analyze complex data and provide strategic recommendations',
@@ -393,16 +415,11 @@ test.describe('Model Management', () => {
         // Verify the button is no longer visible (max 3 prompts reached)
         await expect(page.getByTestId('wizard-button-add-suggestion-prompt')).not.toBeVisible();
 
-        // Go to Step 2: Field Mapping
+        // Go to Step 2: Request Configuration - Match YAML request_schema
         await page.getByTestId('wizard-button-next').click();
-        await expect(page.getByTestId('wizard-step-title-field-mapping')).toBeVisible();
-        // Note: Field mapping configuration from YAML is complex and would require
-        // interacting with the MessageFormatMapper component. For now, we'll proceed
-        // with defaults and the test will verify the model can be created.
-
-        // Go to Step 3: Request Template - Match YAML request_schema
-        await page.getByTestId('wizard-button-next').click();
-        await expect(page.getByTestId('wizard-step-title-request-template')).toBeVisible();
+        await expect(page.getByTestId('wizard-step-title-request')).toBeVisible({
+          timeout: 10000,
+        });
 
         // Fill in request body template matching YAML request_schema
         // Convert YAML structure to use ${messages} template variable
@@ -422,45 +439,6 @@ test.describe('Model Management', () => {
           2
         );
         await page.getByTestId('wizard-textarea-body-config').fill(bodyConfig);
-
-        // Mock the API response to return a successful 200 status
-        // This simulates a successful endpoint test without requiring an actual API key
-        // Set up route interception BEFORE navigating to the test endpoint step
-        await page.route('**/api/model', async route => {
-          const request = route.request();
-          if (request.method() === 'POST') {
-            // Return a mock successful response that matches OpenAI format
-            const mockResponse = {
-              id: 'chatcmpl-test',
-              object: 'chat.completion',
-              created: Math.floor(Date.now() / 1000),
-              model: 'gpt-4.1-turbo',
-              choices: [
-                {
-                  index: 0,
-                  message: {
-                    role: 'assistant',
-                    content: 'This is a test response from the mocked endpoint.',
-                  },
-                  finish_reason: 'stop',
-                },
-              ],
-              usage: {
-                prompt_tokens: 10,
-                completion_tokens: 10,
-                total_tokens: 20,
-              },
-            };
-
-            await route.fulfill({
-              status: 200,
-              contentType: 'application/json',
-              body: JSON.stringify(mockResponse),
-            });
-          } else {
-            await route.continue();
-          }
-        });
 
         // Go to Step 3: Response Handling - Set response path for webhook
         await page.getByTestId('wizard-button-next').click();
@@ -524,26 +502,31 @@ test.describe('Model Management', () => {
           }
         });
 
-        // Click the Send Test button (the test endpoint step uses a different button)
-        const sendTestButton = page.getByRole('button', { name: /send test/i });
-        await expect(sendTestButton).toBeVisible({ timeout: 10000 });
-        await sendTestButton.click();
+        // Click the test endpoint button
+        await page.getByTestId('wizard-button-test-endpoint').click();
 
-        // Wait for the test to complete - wait for final response to appear
-        await expect(page.getByText(/final response/i)).toBeVisible({ timeout: 15000 });
+        // Wait for the test to complete - wait for the button to change from "Testing..." back to "Send Test"
+        // or wait for the final response to appear
+        await page.waitForFunction(
+          () => {
+            const button = document.querySelector('[data-testid="wizard-button-test-endpoint"]');
+            if (!button) return false;
+            const text = button.textContent || '';
+            // Button should not be in "Testing..." state
+            return !text.includes('Testing...');
+          },
+          { timeout: 15000 }
+        );
+
+        // Wait for final response to appear (indicates test completed successfully)
+        await expect(page.getByText(/final response/i)).toBeVisible({ timeout: 10000 });
 
         // Wait a bit more for any async state updates
         await page.waitForTimeout(500);
 
-        // Verify the Next button is now enabled (response status should be 200)
-        await expect(page.getByTestId('wizard-button-next')).toBeEnabled({ timeout: 5000 });
-
-        // Wait for extraction to complete
-        await page.waitForTimeout(1000);
-
-        // If we have a response, the path should extract a value
-        // If not (due to test endpoint failure), we'll set a mock value path
-        // The wizard should still allow saving with a valid path structure
+        // On the last step (test), the Next button is replaced with Save button
+        // Verify the Save button is now enabled (response status should be 200)
+        await expect(page.getByTestId('wizard-button-save')).toBeEnabled({ timeout: 5000 });
 
         // Save the model
         await page.getByTestId('wizard-button-save').click();
@@ -612,22 +595,40 @@ test.describe('Model Management', () => {
         // Click the + button
         await page.getByTestId('model-add-button').click();
 
-        // Step 1: Basic Info
-        await expect(page.getByTestId('wizard-step-title-basic')).toBeVisible();
+        // Step 0: Template Selection (for new models)
+        await expect(page.getByTestId('wizard-step-title-template')).toBeVisible({
+          timeout: 10000,
+        });
+
+        // Click "Start from Scratch" to proceed
+        const startFromScratchButton = page.getByRole('button', { name: /start from scratch/i });
+        await expect(startFromScratchButton).toBeVisible({ timeout: 10000 });
+        await startFromScratchButton.click();
+
+        // Step 1: Connection Setup
+        await expect(page.getByTestId('wizard-step-title-connection')).toBeVisible({
+          timeout: 10000,
+        });
         await page.getByTestId('wizard-input-name').fill('Wizard Test Model');
         await page.getByTestId('wizard-input-endpoint').fill(testEndpoint);
 
-        // Go to Step 2: Field Mapping
+        // Go to Step 2: Request Configuration
         await page.getByTestId('wizard-button-next').click();
-        await expect(page.getByTestId('wizard-step-title-field-mapping')).toBeVisible();
+        await expect(page.getByTestId('wizard-step-title-request')).toBeVisible({
+          timeout: 10000,
+        });
 
-        // Go to Step 3: Request Template
+        // Go to Step 3: Response Handling
         await page.getByTestId('wizard-button-next').click();
-        await expect(page.getByTestId('wizard-step-title-request-template')).toBeVisible();
+        await expect(page.getByTestId('wizard-step-title-response')).toBeVisible({
+          timeout: 10000,
+        });
 
         // Go back to Step 2
         await page.getByTestId('wizard-button-back').click();
-        await expect(page.getByTestId('wizard-step-title-field-mapping')).toBeVisible();
+        await expect(page.getByTestId('wizard-step-title-request')).toBeVisible({
+          timeout: 10000,
+        });
 
         // Close wizard
         await page.keyboard.press('Escape');

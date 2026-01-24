@@ -282,6 +282,56 @@ export type Database = {
           },
         ]
       }
+      model_config_presets: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          event_mappings: Json
+          field_metadata: Json | null
+          id: string
+          is_system: boolean
+          name: string
+          org_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_mappings: Json
+          field_metadata?: Json | null
+          id?: string
+          is_system?: boolean
+          name: string
+          org_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_mappings?: Json
+          field_metadata?: Json | null
+          id?: string
+          is_system?: boolean
+          name?: string
+          org_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_config_presets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       model_keys: {
         Row: {
           created_at: string
@@ -401,6 +451,9 @@ export type Database = {
           schema: string | null
           stream_config: Json | null
           suggestion_prompts: string[] | null
+          template_id: string | null
+          template_mode: string | null
+          template_modified_fields: Json | null
         }
         Insert: {
           body_config?: Json | null
@@ -419,6 +472,9 @@ export type Database = {
           schema?: string | null
           stream_config?: Json | null
           suggestion_prompts?: string[] | null
+          template_id?: string | null
+          template_mode?: string | null
+          template_modified_fields?: Json | null
         }
         Update: {
           body_config?: Json | null
@@ -437,8 +493,19 @@ export type Database = {
           schema?: string | null
           stream_config?: Json | null
           suggestion_prompts?: string[] | null
+          template_id?: string | null
+          template_mode?: string | null
+          template_modified_fields?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "models_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "model_config_presets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       org_map: {
         Row: {

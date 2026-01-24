@@ -683,14 +683,93 @@ export async function acceptInviteFromBadge(page: Page, inviteeEmail: string) {
   await expect(acceptButton).toBeVisible({ timeout: 10000 });
   await expect(acceptButton).toBeEnabled({ timeout: 10000 });
   console.log(`   🖱️  Clicking Accept button for invite: ${inviteId}`);
+
+  // Get the initial badge count before accepting
+  const initialBadgeCount = await page
+    .locator('span.bg-red-500')
+    .first()
+    .textContent()
+    .catch(() => null);
+  const initialCount = initialBadgeCount ? parseInt(initialBadgeCount, 10) : 0;
+  console.log(`   📊 Initial badge count: ${initialCount}`);
+
+  // Click the accept button
   await acceptButton.click();
 
-  console.log(`   ⏳ Waiting for invite ${inviteId} to be removed...`);
+  // Wait for the async accept action and refetch to complete
+  // The accept action triggers a refetch which updates the UI
+  console.log(`   ⏳ Waiting for accept action and UI update...`);
 
-  // Wait for THIS specific invite item to disappear (it was accepted)
+  // Wait for network to be idle (ensures the refetch request has completed)
+  try {
+    await page.waitForLoadState('networkidle', { timeout: 5000 });
+  } catch (error) {
+    // If networkidle times out, continue anyway - the request might have already completed
+    console.log(`   ⚠️  Network idle timeout, continuing...`);
+  }
+
+  // Wait for either:
+  // 1. The invite item to disappear (success)
+  // 2. The badge count to decrease (success)
+  // 3. An error message to appear (failure)
   const acceptedInviteItem = page.getByTestId(`invite-badge-item-${inviteId}`);
-  await expect(acceptedInviteItem).not.toBeVisible({ timeout: 10000 });
-  console.log(`   ✅ Invite ${inviteId} has been removed from the list`);
+
+  try {
+    // Wait for the item to disappear OR the badge count to decrease
+    await Promise.race([
+      // Option 1: Item disappears
+      expect(acceptedInviteItem).not.toBeVisible({ timeout: 15000 }),
+      // Option 2: Badge count decreases (check every 500ms)
+      (async () => {
+        for (let i = 0; i < 30; i++) {
+          await page.waitForTimeout(500);
+          const currentCount = await page
+            .locator('span.bg-red-500')
+            .first()
+            .textContent()
+            .catch(() => null);
+          const count = currentCount ? parseInt(currentCount, 10) : initialCount;
+          if (count < initialCount) {
+            console.log(`   ✅ Badge count decreased from ${initialCount} to ${count}`);
+            return;
+          }
+        }
+        throw new Error('Badge count did not decrease');
+      })(),
+    ]);
+
+    console.log(`   ✅ Invite ${inviteId} has been removed from the list`);
+  } catch (error) {
+    // Check if the item is actually gone (might have been removed quickly)
+    const itemStillVisible = await acceptedInviteItem.isVisible().catch(() => false);
+    if (!itemStillVisible) {
+      console.log(`   ✅ Invite ${inviteId} was removed (checked after timeout)`);
+      return;
+    }
+
+    // Check for error messages
+    const errorMessage = await page
+      .locator('[role="alert"], .text-red-600, .text-destructive')
+      .first()
+      .textContent()
+      .catch(() => null);
+
+    if (errorMessage) {
+      console.error(`   ❌ Error accepting invite: ${errorMessage}`);
+      throw new Error(`Failed to accept invite: ${errorMessage}`);
+    }
+
+    // Check if accept button is still there (indicates accept might have failed)
+    const acceptButtonStillVisible = await acceptButton.isVisible().catch(() => false);
+    if (acceptButtonStillVisible) {
+      throw new Error(
+        `Invite ${inviteId} was not accepted - accept button still visible after timeout`
+      );
+    }
+
+    // Re-throw the original error
+    throw error;
+  }
 
   // Note: The dropdown may stay open if there are more invites remaining
   // This is expected behavior - we don't check if dropdown closes

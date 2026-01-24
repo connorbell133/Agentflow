@@ -161,7 +161,11 @@ export function OrganizationSetup({ onComplete }: OrganizationSetupProps) {
         }
       } else {
         // Profile exists, just mark signup as complete
-        await markSignupComplete(user.id);
+        const result = await markSignupComplete(user.id);
+        if (!result.success) {
+          setErrors({ general: 'Failed to complete setup. Please try again.' });
+          return;
+        }
       }
 
       onComplete();

@@ -22,16 +22,15 @@ import {
   acceptInviteFromBadge,
   createInviteInDatabase,
 } from '../utils/org-utils';
-import { setupAndSignUpUser, setupAndSignUpUserToOrganizationSetup } from '../utils/auth-utils';
 import { generateTestEmail, generateTestGroupName } from '../utils/test-factories';
-import { createUserWithOrg } from '../utils/auth-factories';
+import { createUserWithOrg, createAuthenticatedUser } from '../utils/auth-factories';
 import { cleanupTestUserByEmail } from '../utils/test-cleanup';
 
 /**
- * Helper function to inject Supabase session into Playwright page context
+ * Helper function to inject Supabase session into Playwright browser context
  * Similar to what the authenticatedUserWithOrg fixture does
  */
-async function injectSessionIntoPage(page: any, session: any): Promise<void> {
+async function injectSessionIntoContext(context: any, session: any): Promise<void> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!supabaseUrl) {
     throw new Error('NEXT_PUBLIC_SUPABASE_URL not set');
@@ -52,7 +51,7 @@ async function injectSessionIntoPage(page: any, session: any): Promise<void> {
   const sessionValue = JSON.stringify(session);
 
   // Inject Cookie (Server)
-  await page.context().addCookies([
+  await context.addCookies([
     {
       name: tokenKey,
       value: sessionValue,
@@ -64,12 +63,28 @@ async function injectSessionIntoPage(page: any, session: any): Promise<void> {
     },
   ]);
 
-  // Inject LocalStorage (Client)
-  await page.goto('/404');
-  await page.evaluate(
-    ({ key, value }: { key: string; value: string }) => localStorage.setItem(key, value),
-    { key: tokenKey, value: sessionValue }
-  );
+  // Inject LocalStorage (Client) - create a temporary page to set localStorage
+  const tempPage = await context.newPage();
+  try {
+    await tempPage.goto('http://localhost:3000/404', {
+      waitUntil: 'domcontentloaded',
+      timeout: 5000,
+    });
+    await tempPage.evaluate(
+      ({ key, value }: { key: string; value: string }) => localStorage.setItem(key, value),
+      { key: tokenKey, value: sessionValue }
+    );
+  } catch (error) {
+    // If navigation fails, use addInitScript for future page loads
+    await tempPage.addInitScript(
+      ({ key, value }: { key: string; value: string }) => {
+        localStorage.setItem(key, value);
+      },
+      { key: tokenKey, value: sessionValue }
+    );
+  } finally {
+    await tempPage.close();
+  }
 }
 
 /**
@@ -98,9 +113,6 @@ test.describe.serial('Invite Acceptance - During Onboarding', () => {
       fullName: 'Admin User',
     });
 
-    // Inject session into page (for admin operations)
-    await injectSessionIntoPage(page, adminUser.session);
-
     // Generate unique invited user email
     invitedUserEmail = generateTestEmail(testInfo);
     const invitedUserPassword = 'Password123!';
@@ -123,31 +135,42 @@ test.describe.serial('Invite Acceptance - During Onboarding', () => {
     console.log('\n🧪 TEST: Accept Invite During Onboarding');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-    // Create fresh browser context for invited user (no admin session)
-    console.log('\n📋 Step 1: Creating fresh user context...');
+    // Create invited user programmatically with signup_complete: false
+    console.log('\n📋 Step 1: Creating user programmatically...');
+    const invitedUser = await createAuthenticatedUser({
+      email: invitedUserEmail,
+      password: invitedUserPassword,
+      fullName: invitedUserFullName,
+      signupComplete: false, // User hasn't completed onboarding yet
+    });
+    console.log('   ✅ User created with signup_complete: false');
+
+    // Create fresh browser context for invited user
+    console.log('\n📋 Step 2: Creating user context and injecting session...');
     const invitedUserContext = await browser.newContext({ storageState: undefined });
+    await injectSessionIntoContext(invitedUserContext, invitedUser.session);
     const invitedUserPage = await invitedUserContext.newPage();
-    console.log('   ✅ Fresh context created');
+    console.log('   ✅ Context created and session injected');
 
     try {
-      // Sign up user - stops at organization setup step
-      console.log('\n🎯 Step 2: Signing up user and navigating to org setup...');
-      await setupAndSignUpUserToOrganizationSetup(
-        invitedUserPage,
-        invitedUserEmail,
-        invitedUserPassword,
-        invitedUserFullName
-      );
+      // Navigate directly to onboarding (user is already authenticated)
+      console.log('\n🎯 Step 3: Navigating to onboarding...');
+      await invitedUserPage.goto('http://localhost:3000/onboarding');
+      await invitedUserPage.waitForURL('**/onboarding**', { timeout: 10000 });
+
+      // Wait for organization setup page to be ready
+      await expect(invitedUserPage.getByText('Organization Setup')).toBeVisible({ timeout: 10000 });
+      await invitedUserPage.waitForLoadState('networkidle');
       console.log('   ✅ User at organization setup step');
       console.log(`   URL: ${invitedUserPage.url()}`);
 
       // Accept the pending invite
-      console.log('\n🔍 Step 3: Accepting invite from onboarding...');
+      console.log('\n🔍 Step 4: Accepting invite from onboarding...');
       await acceptInviteInOnboarding(invitedUserPage, invitedUserEmail);
       console.log('   ✅ Invite accepted (still on onboarding page)');
 
       // Verify database was updated - user should be in org and group
-      console.log('\n🔍 Step 4: Verifying database updates...');
+      console.log('\n🔍 Step 5: Verifying database updates...');
       const { createSupabaseServerClient } = await import('../utils/supabase-test-client');
       const supabase = await createSupabaseServerClient();
 
@@ -183,14 +206,14 @@ test.describe.serial('Invite Acceptance - During Onboarding', () => {
       console.log(`   ✅ User added to group: ${(groupMap as any)?.groups?.role}`);
 
       // Click Continue to finish onboarding
-      console.log('\n🔍 Step 5: Clicking Continue button...');
+      console.log('\n🔍 Step 6: Clicking Continue button...');
       const continueButton = invitedUserPage.getByTestId('continue-after-accepting-invites-button');
       await expect(continueButton).toBeVisible({ timeout: 10000 });
       await continueButton.click();
       console.log('   ✅ Continue button clicked');
 
       // Verify redirect away from onboarding
-      console.log('\n✅ Step 6: Verifying redirect...');
+      console.log('\n✅ Step 7: Verifying redirect...');
       await invitedUserPage.waitForTimeout(2000);
       const finalUrl = invitedUserPage.url();
       console.log(`   Final URL: ${finalUrl}`);
@@ -243,8 +266,7 @@ test.describe.serial('Invite Acceptance - During Onboarding', () => {
       fullName: 'Admin User',
     });
 
-    // Inject session into page (for admin operations)
-    await injectSessionIntoPage(page, adminUser.session);
+    // Note: Admin operations use direct database calls, no session injection needed
 
     // Generate unique invited user email
     invitedUserEmail = generateTestEmail(testInfo);
@@ -266,16 +288,27 @@ test.describe.serial('Invite Acceptance - During Onboarding', () => {
 
     console.log('\n🧪 TEST: Show Invite Details in Onboarding');
 
+    // Create invited user programmatically with signup_complete: false
+    const invitedUser = await createAuthenticatedUser({
+      email: invitedUserEmail,
+      password: invitedUserPassword,
+      fullName: invitedUserFullName,
+      signupComplete: false, // User hasn't completed onboarding yet
+    });
+
+    // Create fresh browser context for invited user
     const invitedUserContext = await browser.newContext({ storageState: undefined });
+    await injectSessionIntoContext(invitedUserContext, invitedUser.session);
     const invitedUserPage = await invitedUserContext.newPage();
 
     try {
-      await setupAndSignUpUserToOrganizationSetup(
-        invitedUserPage,
-        invitedUserEmail,
-        invitedUserPassword,
-        invitedUserFullName
-      );
+      // Navigate directly to onboarding (user is already authenticated)
+      await invitedUserPage.goto('http://localhost:3000/onboarding');
+      await invitedUserPage.waitForURL('**/onboarding**', { timeout: 10000 });
+
+      // Wait for organization setup page to be ready
+      await expect(invitedUserPage.getByText('Organization Setup')).toBeVisible({ timeout: 10000 });
+      await invitedUserPage.waitForLoadState('networkidle');
 
       // Verify user is on the "Join Organization" tab
       console.log('\n🔍 Step 1: Verifying Join Organization tab...');
@@ -392,8 +425,7 @@ test.describe.serial('Invite Acceptance - From Notification Badge', () => {
       fullName: 'Admin User',
     });
 
-    // Inject session into page (for admin operations)
-    await injectSessionIntoPage(page, adminUser.session);
+    // Note: Admin operations use direct database calls, no session injection needed
 
     // Generate unique invited user email
     invitedUserEmail = generateTestEmail(testInfo);
@@ -434,24 +466,36 @@ test.describe.serial('Invite Acceptance - From Notification Badge', () => {
     });
 
     try {
-      // Sign up user - completes full flow including skipping org setup
-      console.log('\n🎯 Step 1: Signing up user and completing onboarding...');
-      await setupAndSignUpUser(
-        invitedUserPage,
-        invitedUserEmail,
-        invitedUserPassword,
-        invitedUserFullName
-      );
-      console.log('   ✅ Onboarding completed');
+      // Create invited user programmatically with signup_complete: true
+      // User has already completed onboarding and is on the main app
+      console.log('\n🎯 Step 1: Creating user programmatically...');
+      const invitedUser = await createAuthenticatedUser({
+        email: invitedUserEmail,
+        password: invitedUserPassword,
+        fullName: invitedUserFullName,
+        signupComplete: true, // User has completed onboarding
+      });
+      console.log('   ✅ User created with signup_complete: true');
+
+      // Inject session and navigate directly to home page
+      console.log('\n🎯 Step 2: Injecting session and navigating to home page...');
+      await injectSessionIntoContext(invitedUserContext, invitedUser.session);
+      await invitedUserPage.goto('http://localhost:3000/');
+      await invitedUserPage.waitForURL(url => !url.toString().includes('/onboarding'), {
+        timeout: 10000,
+      });
+      await invitedUserPage.waitForLoadState('networkidle');
+
+      console.log('   ✅ User on main app page');
       console.log(`   URL: ${invitedUserPage.url()}`);
 
       // Accept invite from notification badge
-      console.log('\n🔍 Step 2: Accepting invite from badge...');
+      console.log('\n🔍 Step 3: Accepting invite from badge...');
       await acceptInviteFromBadge(invitedUserPage, invitedUserEmail);
       console.log('   ✅ Invite accepted from badge');
 
       // Verify database was updated - user should be in org and group
-      console.log('\n🔍 Step 3: Verifying database updates...');
+      console.log('\n🔍 Step 4: Verifying database updates...');
       const { createSupabaseServerClient } = await import('../utils/supabase-test-client');
       const supabase = await createSupabaseServerClient();
 
@@ -487,7 +531,7 @@ test.describe.serial('Invite Acceptance - From Notification Badge', () => {
       console.log(`   ✅ User added to group: ${(groupMap as any)?.groups?.role}`);
 
       // Verify completion - user should still be on main page
-      console.log('\n✅ Step 4: Verifying user remains on main page...');
+      console.log('\n✅ Step 5: Verifying user remains on main page...');
       await invitedUserPage.waitForTimeout(1000);
       const finalUrl = invitedUserPage.url();
       console.log(`   Final URL: ${finalUrl}`);
@@ -541,8 +585,7 @@ test.describe.serial('Invite Acceptance - From Notification Badge', () => {
       fullName: 'Admin User',
     });
 
-    // Inject session into page (for admin operations)
-    await injectSessionIntoPage(page, adminUser.session);
+    // Note: Admin operations use direct database calls, no session injection needed
 
     // Generate unique invited user email
     invitedUserEmail = generateTestEmail(testInfo);
@@ -567,12 +610,22 @@ test.describe.serial('Invite Acceptance - From Notification Badge', () => {
     const invitedUserPage = await invitedUserContext.newPage();
 
     try {
-      await setupAndSignUpUser(
-        invitedUserPage,
-        invitedUserEmail,
-        invitedUserPassword,
-        invitedUserFullName
-      );
+      // Create invited user programmatically with signup_complete: true
+      // User has already completed onboarding and is on the main app
+      const invitedUser = await createAuthenticatedUser({
+        email: invitedUserEmail,
+        password: invitedUserPassword,
+        fullName: invitedUserFullName,
+        signupComplete: true, // User has completed onboarding
+      });
+
+      // Inject session and navigate directly to home page
+      await injectSessionIntoContext(invitedUserContext, invitedUser.session);
+      await invitedUserPage.goto('http://localhost:3000/');
+      await invitedUserPage.waitForURL(url => !url.toString().includes('/onboarding'), {
+        timeout: 10000,
+      });
+      await invitedUserPage.waitForLoadState('networkidle');
 
       // Verify badge is visible (there are multiple badges - sidebar and top menu)
       console.log('\n🔍 Checking for notification badge...');
