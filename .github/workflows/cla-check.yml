@@ -137,7 +137,7 @@ jobs:
           script: |
             const message = '👋 Thanks for contributing to AgentFlow!\n\n' +
               '**Quick legal thing:** We need you to agree to our CLA. **Takes 10 seconds, one-time only.**\n\n' +
-              '📄 [Read the CLA (2 min read)](https://github.com/' + context.repo.owner + '/' + context.repo.repo + '/blob/main/CLA.md)\n\n' +
+              '📄 [Read the CLA (2 min read)](https://github.com/Agent-Flow-AI/chat_platform/blob/main/CLA.md)\n\n' +
               '**To sign**, just comment:\n' +
               '```\n' +
               'I agree to the CLA\n' +
