@@ -1,4 +1,4 @@
-name: CI
+name: ci
 
 on:
   pull_request:
@@ -8,7 +8,6 @@ on:
 
 jobs:
   build:
-    name: Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -35,7 +34,6 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: placeholder_service_role_key_for_ci_build
 
   lint:
-    name: Lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -54,7 +52,6 @@ jobs:
         run: npm run lint
 
   type-check:
-    name: Type Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -73,7 +70,6 @@ jobs:
         run: npx tsc --project tsconfig.build.json --noEmit
 
   test:
-    name: Test
     runs-on: ubuntu-latest
     # Allow test failures while we fix remaining test issues
     continue-on-error: true
@@ -94,7 +90,6 @@ jobs:
         run: npm test
 
   test-e2e:
-    name: E2E Tests
     runs-on: ubuntu-latest
     # Temporarily disabled until test environment secrets are configured
     if: false
