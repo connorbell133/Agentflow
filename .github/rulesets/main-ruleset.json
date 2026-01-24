@@ -24,23 +24,23 @@
       "parameters": {
         "required_status_checks": [
           {
-            "context": "build",
+            "context": "ci / build",
             "integration_id": null
           },
           {
-            "context": "lint",
+            "context": "ci / lint",
             "integration_id": null
           },
           {
-            "context": "test",
+            "context": "ci / test",
             "integration_id": null
           },
           {
-            "context": "test:e2e",
+            "context": "ci / test-e2e",
             "integration_id": null
           },
           {
-            "context": "type-check",
+            "context": "ci / type-check",
             "integration_id": null
           }
         ],

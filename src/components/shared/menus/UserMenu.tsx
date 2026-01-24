@@ -44,7 +44,7 @@ export const NamePopup: React.FC<NamePopupProps> = ({ user, isOpen, location }) 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   // Subscription plan (can be implemented with custom subscription logic later)
-  const subscriptionPlan = 'Free';
+  const subscriptionPlan = 'Local';
   const isLoading = false;
   const error = null;
   const [isOwner, setIsOwner] = useState(false);
