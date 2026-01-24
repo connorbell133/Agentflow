@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { useSession } from '@/lib/auth/client-helpers';
+import { useUser } from '@/hooks/auth/use-user';
 import { updateProfile, createProfile } from '@/actions/auth/profile';
 import { createLogger } from '@/lib/infrastructure/logger';
 import { profileSchema } from '@/lib/validation/schemas';
@@ -19,13 +19,12 @@ interface ProfileSetupProps {
 }
 
 export function ProfileSetup({ onComplete }: ProfileSetupProps) {
-  const { data: session } = useSession();
-  const user = session?.user;
+  const { user, profile } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: (user?.user_metadata?.full_name as string) || '',
+    fullName: profile?.full_name || '',
     email: user?.email || '',
-    avatarUrl: (user?.user_metadata?.avatar_url as string) || '',
+    avatarUrl: profile?.avatar_url || '',
   });
 
   const [generalError, setGeneralError] = useState<string>('');
@@ -49,9 +48,7 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
 
       // Update the profile with the form data
       const result = await updateProfile(user.id, {
-        fullName: formData.fullName,
-        email: formData.email,
-        avatarUrl: formData.avatarUrl,
+        ...formData,
         signupComplete: false, // Will be set to true after org setup
       });
 

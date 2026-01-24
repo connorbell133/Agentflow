@@ -8,23 +8,12 @@
  */
 
 import { type UIMessage } from 'ai';
+import type { SSEEventMapperConfig } from '@/types/event-mapping';
 
 /**
  * Endpoint types supported by the router
  */
 export type EndpointType = 'ai-sdk-stream' | 'webhook' | 'sse';
-
-/**
- * Configuration for SSE stream conversion
- */
-export interface SSEStreamConfig {
-  /** JSON path to extract content delta (e.g., 'choices[0].delta.content') */
-  contentPath?: string;
-  /** Signal indicating stream completion (e.g., '[DONE]') */
-  doneSignal?: string;
-  /** JSON path to error message */
-  errorPath?: string;
-}
 
 /**
  * Configuration for webhook response conversion
@@ -39,7 +28,7 @@ export interface WebhookStreamConfig {
 /**
  * Combined stream configuration type
  */
-export type StreamConfig = SSEStreamConfig | WebhookStreamConfig | null;
+export type StreamConfig = SSEEventMapperConfig | WebhookStreamConfig | null;
 
 /**
  * Model configuration for routing

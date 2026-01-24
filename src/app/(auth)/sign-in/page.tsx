@@ -78,6 +78,7 @@ export default function SignInPage() {
                 autoComplete="email"
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
                 placeholder="you@example.com"
+                data-testid="sign-in-email-input"
               />
             </div>
 
@@ -97,6 +98,7 @@ export default function SignInPage() {
                 autoComplete="current-password"
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
                 placeholder="••••••••"
+                data-testid="sign-in-password-input"
               />
             </div>
 
@@ -130,6 +132,7 @@ export default function SignInPage() {
               type="submit"
               disabled={loading}
               className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+              data-testid="sign-in-submit-button"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>

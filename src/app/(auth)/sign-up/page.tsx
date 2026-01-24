@@ -36,7 +36,7 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -50,11 +50,18 @@ export default function SignUpPage() {
       if (signUpError) {
         setError(signUpError.message || 'Sign up failed');
       } else {
-        setMessage('Check your email for a confirmation link!');
-        // Redirect after 3 seconds
-        setTimeout(() => {
-          router.push('/sign-in');
-        }, 3000);
+        // Check if user was auto-confirmed (session exists)
+        if (data.session) {
+          // User is automatically signed in, redirect to onboarding
+          router.push('/onboarding');
+        } else {
+          // Email confirmation required
+          setMessage('Check your email for a confirmation link!');
+          // Redirect after 3 seconds
+          setTimeout(() => {
+            router.push('/sign-in');
+          }, 3000);
+        }
       }
     } catch (err: any) {
       setError(err?.message || 'An unexpected error occurred');
@@ -107,6 +114,7 @@ export default function SignUpPage() {
                 autoComplete="name"
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
                 placeholder="John Doe"
+                data-testid="sign-up-name-input"
               />
             </div>
 
@@ -126,6 +134,7 @@ export default function SignUpPage() {
                 autoComplete="email"
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
                 placeholder="you@example.com"
+                data-testid="sign-up-email-input"
               />
             </div>
 
@@ -146,6 +155,7 @@ export default function SignUpPage() {
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
                 placeholder="••••••••"
                 minLength={8}
+                data-testid="sign-up-password-input"
               />
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 Must be at least 8 characters
@@ -168,6 +178,7 @@ export default function SignUpPage() {
                 autoComplete="new-password"
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
                 placeholder="••••••••"
+                data-testid="sign-up-confirm-password-input"
               />
             </div>
 
@@ -179,6 +190,7 @@ export default function SignUpPage() {
                   type="checkbox"
                   required
                   className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
+                  data-testid="sign-up-terms-checkbox"
                 />
               </div>
               <div className="ml-3 text-sm">
@@ -205,6 +217,7 @@ export default function SignUpPage() {
               type="submit"
               disabled={loading}
               className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+              data-testid="sign-up-submit-button"
             >
               {loading ? 'Creating account...' : 'Create Account'}
             </button>

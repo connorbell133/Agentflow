@@ -2,11 +2,11 @@ import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Plus, MessageSquare, Search, Settings, HelpCircle, LogOut, User } from 'lucide-react';
-import { cn } from '@/utils/cn';
+import { cn } from '@/utils/shared/cn';
 import { Conversation, Message } from '@/lib/supabase/types';
 import { useUser } from '@/hooks/auth/use-user';
-import { DarkModeToggle } from '@/components/shared/theme/DarkModeToggle';
 import { signOut } from '@/lib/auth/client-helpers';
+import { DarkModeToggle } from '@/components/common/theme/DarkModeToggle';
 import Image from 'next/image';
 
 interface MobileConversationListProps {
@@ -230,7 +230,7 @@ const MobileConversationList: React.FC<MobileConversationListProps> = ({
             <span className="text-sm">Help & Support</span>
           </button>
           <button
-            onClick={signOut}
+            onClick={async () => await signOut()}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-foreground transition-colors hover:bg-muted"
           >
             <LogOut className="h-4 w-4" />

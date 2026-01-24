@@ -141,6 +141,7 @@ export const NamePopup: React.FC<NamePopupProps> = ({ user, isOpen, location }) 
               width={32}
               height={32}
               className="rounded-full"
+              data-testid="avatar"
             />
             <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
               {user?.full_name || 'User'}

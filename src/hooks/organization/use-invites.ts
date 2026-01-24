@@ -11,11 +11,11 @@ import {
   getInviteInviter,
   acceptInviteAction,
 } from '@/actions/organization/invites';
-import { useUser } from '@/hooks/auth/use-user';
+import { useSession } from '@/lib/auth/client-helpers';
 export const useInvites = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useUser();
-  const userId = user?.id;
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
 
   // returns Invite[] for a user with display data
   const fetchInvites = useCallback(

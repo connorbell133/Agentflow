@@ -35,6 +35,8 @@ export function OrganizationSetup({ onComplete }: OrganizationSetupProps) {
     Map<string, { orgName: string; groupName: string; inviterEmail: string }>
   >(new Map());
   const [invitesLoadingState, setInvitesLoadingState] = useState(true);
+  const [acceptedInvites, setAcceptedInvites] = useState<Set<string>>(new Set());
+  const [processingInviteId, setProcessingInviteId] = useState<string | null>(null);
   // Fetch invites on component mount
   useEffect(() => {
     const loadInvites = async () => {
@@ -76,9 +78,9 @@ export function OrganizationSetup({ onComplete }: OrganizationSetupProps) {
   };
 
   const handleJoinOrg = async (invite: Invite) => {
-    if (!user?.id) return;
+    if (!user?.id || !invite.id) return;
 
-    setIsLoading(true);
+    setProcessingInviteId(invite.id);
 
     try {
       // Check if profile exists, if not create it
@@ -101,17 +103,14 @@ export function OrganizationSetup({ onComplete }: OrganizationSetupProps) {
       const success = await acceptInvite(invite);
 
       if (success) {
-        // Mark signup as complete
-        await markSignupComplete(user.id);
+        // Add to accepted invites set
+        setAcceptedInvites(prev => new Set(prev).add(invite.id));
 
-        // Get display data for the organization name
-        const displayInfo = inviteDisplayData.get(invite.id);
-        const orgName = displayInfo?.orgName || invite.org_id || 'the organization';
+        // Remove from pending invites
+        setInvites(prev => prev.filter(i => i.id !== invite.id));
 
-        // Set success state
-        setUserType('member');
-        setOrganizationName(orgName);
-        setSetupState('success');
+        // Clear any errors
+        setErrors({});
       } else {
         setErrors({ general: 'Failed to join organization' });
       }
@@ -119,15 +118,23 @@ export function OrganizationSetup({ onComplete }: OrganizationSetupProps) {
       console.error('Join organization error:', error);
       setErrors({ general: 'An unexpected error occurred' });
     } finally {
-      setIsLoading(false);
+      setProcessingInviteId(null);
     }
   };
 
   const handleDeclineInvite = async (invite: Invite) => {
+    if (!invite.id) return;
+
+    setProcessingInviteId(invite.id);
     try {
       await denyInvite(invite);
+      // Remove from pending invites
+      setInvites(prev => prev.filter(i => i.id !== invite.id));
     } catch (error) {
       console.error('Decline invite error:', error);
+      setErrors({ general: 'Failed to decline invitation' });
+    } finally {
+      setProcessingInviteId(null);
     }
   };
 
@@ -227,9 +234,33 @@ export function OrganizationSetup({ onComplete }: OrganizationSetupProps) {
               </TabsList>
 
               <TabsContent value="join" className="space-y-4">
+                {acceptedInvites.size > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-medium text-foreground">Accepted</h3>
+                      <Badge variant="default" className="bg-green-600">
+                        {acceptedInvites.size}
+                      </Badge>
+                    </div>
+                    <div className="rounded-lg border border-green-600/20 bg-green-600/10 p-4">
+                      <p className="text-sm text-green-700 dark:text-green-400">
+                        ✓ You&apos;ve accepted {acceptedInvites.size} invitation
+                        {acceptedInvites.size > 1 ? 's' : ''}. You can accept more below or
+                        continue.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {invites && invites.length > 0 ? (
                   <div className="space-y-3">
-                    <h3 className="text-sm font-medium text-foreground">Pending Invitations</h3>
+                    <h3
+                      className="text-sm font-medium text-foreground"
+                      role="heading"
+                      aria-level={3}
+                    >
+                      Pending Invitations
+                    </h3>
                     {invites.map(invite => {
                       const mapKey = invite.id || `${invite.org_id}-${invite.invitee}`;
                       const displayInfo = inviteDisplayData.get(mapKey) || {
@@ -237,6 +268,7 @@ export function OrganizationSetup({ onComplete }: OrganizationSetupProps) {
                         groupName: invite.group_id || '',
                         inviterEmail: invite.inviter,
                       };
+                      const isProcessing = processingInviteId === invite.id;
                       return (
                         <Card key={invite.id} className="border-border">
                           <CardContent className="pt-4">
@@ -259,16 +291,16 @@ export function OrganizationSetup({ onComplete }: OrganizationSetupProps) {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handleDeclineInvite(invite)}
-                                  disabled={isLoading}
+                                  disabled={isProcessing}
                                 >
-                                  Decline
+                                  {isProcessing ? 'Processing...' : 'Decline'}
                                 </Button>
                                 <Button
                                   size="sm"
                                   onClick={() => handleJoinOrg(invite)}
-                                  disabled={isLoading}
+                                  disabled={isProcessing}
                                 >
-                                  {isLoading ? 'Joining...' : 'Accept'}
+                                  {isProcessing ? 'Accepting...' : 'Accept'}
                                 </Button>
                               </div>
                             </div>
@@ -276,6 +308,18 @@ export function OrganizationSetup({ onComplete }: OrganizationSetupProps) {
                         </Card>
                       );
                     })}
+                  </div>
+                ) : acceptedInvites.size > 0 ? (
+                  <div className="py-8 text-center">
+                    <p className="text-muted-foreground">No more pending invitations</p>
+                    <Button
+                      onClick={handleSkip}
+                      disabled={isLoading}
+                      className="mt-4"
+                      data-testid="continue-after-accepting-invites-button"
+                    >
+                      Continue
+                    </Button>
                   </div>
                 ) : (
                   <div className="py-8 text-center">
@@ -308,6 +352,7 @@ export function OrganizationSetup({ onComplete }: OrganizationSetupProps) {
                 onClick={handleSkip}
                 disabled={isLoading}
                 className="text-muted-foreground hover:text-foreground"
+                data-testid="organization-setup-skip-button"
               >
                 Skip for now
               </Button>

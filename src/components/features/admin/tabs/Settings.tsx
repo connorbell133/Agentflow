@@ -18,7 +18,9 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Pencil } from 'lucide-react';
-import ProfileModal from '@/components/shared/modals/ProfileModal';
+import ProfileModal from '@/components/common/modals/ProfileModal';
+import { useAdminSubscription } from '@/components/features/admin/AdminPageWrapper';
+import { useUser } from '@/hooks/auth/use-user';
 /** Example Org interface — adjust as needed. */
 
 interface OrgSettingsProps {
@@ -34,6 +36,7 @@ const OrgSettings: React.FC<OrgSettingsProps> = ({ user, org, refreshOrgs }) => 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const { updateOrg } = useOrgs(user);
   const router = useRouter();
+  const { subscription, isLoading: subscriptionLoading } = useAdminSubscription();
   // Example update handler (replace with real update logic)
   const handleUpdateOrg = async () => {
     // e.g., call your API to update org fields
@@ -44,6 +47,12 @@ const OrgSettings: React.FC<OrgSettingsProps> = ({ user, org, refreshOrgs }) => 
     refreshOrgs && refreshOrgs();
 
     alert('Organization updated');
+  };
+
+  // Example upgrade plan handler (replace with real billing logic)
+  const handleUpgradePlan = () => {
+    // Open the user profile modal instead of Stripe checkout
+    setIsProfileModalOpen(true);
   };
 
   return (
@@ -57,6 +66,47 @@ const OrgSettings: React.FC<OrgSettingsProps> = ({ user, org, refreshOrgs }) => 
           <div className="space-y-2">
             <Label htmlFor="org-name">Organization Name</Label>
             <Input id="org-name" value={orgName} onChange={e => setOrgName(e.target.value)} />
+          </div>
+
+          <Separator />
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <CardTitle className="text-xl">Billing & Plan</CardTitle>
+              <CardDescription>
+                Manage your organization&apos;s subscription and billing.
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Current plan:</span>
+              {subscriptionLoading ? (
+                <Badge variant="secondary" className="text-sm font-medium">
+                  Loading...
+                </Badge>
+              ) : (
+                <>
+                  <Badge
+                    variant={
+                      subscription?.subscriptionItems?.[0]?.plan?.name === 'Pro'
+                        ? 'default'
+                        : 'secondary'
+                    }
+                    className="text-sm font-medium"
+                  >
+                    {subscription?.subscriptionItems?.[0]?.plan?.name || 'Free'}
+                  </Badge>
+                  <Button
+                    onClick={handleUpgradePlan}
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    aria-label="Edit plan"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </CardContent>
         <CardFooter className="flex justify-end space-x-2">

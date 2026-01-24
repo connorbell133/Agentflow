@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Profile } from '@/lib/supabase/types';
 import { createOrg } from '@/actions/organization/organizations';
-import { addUserToOrg } from '@/actions/auth/users';
 import { getUserOrgStatus } from '@/actions/organization/user-org-status';
 import { createProfile, getProfile } from '@/actions/auth/profile';
 import { z } from 'zod';
@@ -92,10 +91,8 @@ export function DirectOrgCreationForm({ user, onSuccess }: DirectOrgCreationForm
       const result = await createOrg(validation.data, user.id);
 
       if (result && result.length > 0) {
-        const orgId = (result[0] as any).id;
-
-        // Add user to organization
-        await addUserToOrg(orgId, user.id);
+        // Note: The database trigger automatically adds the owner to org_map
+        // with role='owner', so we don't need to call addUserToOrg here
 
         // Success - notify parent component
         onSuccess(validation.data);

@@ -31,10 +31,7 @@ async function cleanupAdminUser() {
   }
 
   // Delete from orgMap
-  const { error: orgMapError } = await supabase
-    .from('org_map')
-    .delete()
-    .eq('user_id', profile.id);
+  const { error: orgMapError } = await supabase.from('org_map').delete().eq('user_id', profile.id);
 
   if (!orgMapError) {
     console.log('✓ Deleted orgMap entries');
@@ -50,8 +47,8 @@ async function cleanupAdminUser() {
     console.log('✓ Set signup_complete = true');
   }
 
-  // Note: We're NOT deleting the profile itself because Clerk manages that
-  // The user will still exist in Clerk, but all org-related data is cleaned up
+  // Note: We're NOT deleting the profile itself to preserve the admin user for testing
+  // We're just cleaning up org-related data to allow fresh test runs
 
   console.log('\n✅ Cleanup complete!\n');
 }

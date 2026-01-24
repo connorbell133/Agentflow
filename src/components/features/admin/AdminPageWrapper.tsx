@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, createContext, useContext, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
+// Subscription removed - migrated to Supabase auth
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { DashboardProvider } from '@/contexts/DashboardContext';
 import { AdminDataProvider } from '@/contexts/AdminDataContext';
@@ -9,6 +10,23 @@ import AdminDashboardLayout from '@/components/features/admin/layout/AdminDashbo
 import AdminTabContent from '@/components/features/admin/AdminTabContent';
 import { OrganizationCreatedModal } from '@/components/features/admin/modals/OrganizationCreatedModal';
 import { Profile, Organization } from '@/lib/supabase/types';
+
+// Centralized subscription context to avoid multiple useSubscription calls
+interface SubscriptionContextValue {
+  subscription: any;
+  isLoading: boolean;
+  error: any;
+}
+
+const SubscriptionContext = createContext<SubscriptionContextValue | undefined>(undefined);
+
+export function useAdminSubscription() {
+  const context = useContext(SubscriptionContext);
+  if (!context) {
+    throw new Error('useAdminSubscription must be used within AdminPageWrapper');
+  }
+  return context;
+}
 
 interface AdminPageWrapperProps {
   user: Profile;
@@ -36,6 +54,13 @@ export function AdminPageWrapper({
   const [createdOrgName, setCreatedOrgName] = useState('');
   const [activeTab, setActiveTab] = useState(initialTab);
 
+  // TEMPORARILY DISABLED to debug excessive RSC requests
+  // const { data: subscription, isLoading: subscriptionLoading, error: subscriptionError } = useSubscription();
+  const subscription = null;
+  const subscriptionLoading = false;
+  const subscriptionError = null;
+  console.log(`[AdminPageWrapper] useSubscription DISABLED for debugging`);
+
   useEffect(() => {
     // Check if we came from organization creation
     const orgCreated = searchParams.get('orgCreated');
@@ -60,25 +85,29 @@ export function AdminPageWrapper({
 
   return (
     <ThemeProvider>
-      <DashboardProvider org_id={org.id} initialStats={initialData?.stats}>
-        <AdminDataProvider org_id={org.id} initialData={initialData}>
-          {/* Organization Created Modal */}
-          <OrganizationCreatedModal
-            isOpen={showOrgCreatedModal}
-            onClose={() => setShowOrgCreatedModal(false)}
-            orgName={createdOrgName}
-          />
+      <SubscriptionContext.Provider
+        value={{ subscription, isLoading: subscriptionLoading, error: subscriptionError }}
+      >
+        <DashboardProvider org_id={org.id} initialStats={initialData?.stats}>
+          <AdminDataProvider org_id={org.id} initialData={initialData}>
+            {/* Organization Created Modal */}
+            <OrganizationCreatedModal
+              isOpen={showOrgCreatedModal}
+              onClose={() => setShowOrgCreatedModal(false)}
+              orgName={createdOrgName}
+            />
 
-          <AdminDashboardLayout
-            user={user}
-            org={org}
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-          >
-            <AdminTabContent tab={activeTab} user={user} org={org} />
-          </AdminDashboardLayout>
-        </AdminDataProvider>
-      </DashboardProvider>
+            <AdminDashboardLayout
+              user={user}
+              org={org}
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+            >
+              <AdminTabContent tab={activeTab} user={user} org={org} />
+            </AdminDashboardLayout>
+          </AdminDataProvider>
+        </DashboardProvider>
+      </SubscriptionContext.Provider>
     </ThemeProvider>
   );
 }

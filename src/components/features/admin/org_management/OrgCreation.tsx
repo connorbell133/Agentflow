@@ -58,13 +58,13 @@ export default function OrgCreationScreen({ user }: OrgCreationScreenProps) {
             </div>
 
             <div className="space-y-2">
-              <Badge variant="outline" className="text-primary">
+              <Badge variant="outline" className="text-primary" data-testid="org-created-badge">
                 Organization Created
               </Badge>
-              <h1 className="text-3xl font-bold text-foreground">
+              <h1 className="text-3xl font-bold text-foreground" data-testid="org-success-title">
                 {`Welcome to "${createdOrgName}"!`}
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground" data-testid="org-success-message">
                 {`Your organization has been successfully created and you've been added as the administrator.`}
               </p>
             </div>

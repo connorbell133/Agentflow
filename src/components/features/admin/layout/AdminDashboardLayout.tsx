@@ -2,7 +2,7 @@
 
 import React, { Suspense } from 'react';
 import { Profile, Organization } from '@/lib/supabase/types';
-import { SkeletonTable } from '@/components/shared/cards/SkeletonCard';
+import { SkeletonTable } from '@/components/common/cards/SkeletonCard';
 import { AdminHeader } from '@/components/features/admin/layout/AdminHeader';
 import { AdminTabs } from '@/components/features/admin/layout/AdminTabs';
 
@@ -12,6 +12,7 @@ interface AdminDashboardLayoutProps {
   children: React.ReactNode;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
+  subscription?: any;
 }
 
 // Client component for layout and interactive content
@@ -21,6 +22,7 @@ export default function AdminDashboardLayout({
   children,
   activeTab,
   onTabChange,
+  subscription,
 }: AdminDashboardLayoutProps) {
   return (
     <div className="flex min-h-screen flex-col bg-background">

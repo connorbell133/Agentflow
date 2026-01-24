@@ -9,9 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { removeInvite } from '@/actions/organization/invites';
-import { addUserToGroup } from '@/actions/organization/group';
-import { addUserToOrg } from '@/actions/auth/users';
+import { removeInvite, acceptInviteAction } from '@/actions/organization/invites';
 import { getOrgName } from '@/actions/organization/organizations';
 import { getProfile } from '@/actions/auth/profile';
 import { getInviteGroup } from '@/actions/organization/invites';
@@ -31,29 +29,48 @@ export default function InviteBadge({ refreshModels, open = true }: InviteBadgeP
 
   React.useEffect(() => {
     const enrichInvites = async () => {
+      console.log('[InviteBadge] 🔄 enrichInvites triggered', {
+        hasInvites: !!invites,
+        inviteCount: invites?.length || 0,
+      });
+
       if (!invites || invites.length === 0) {
+        console.log('[InviteBadge] ⏭️  No invites to enrich, setting empty array');
         setEnrichedInvites([]);
         return;
       }
 
-      const enriched = await Promise.all(
-        invites.map(async invite => {
-          const [orgData, inviterData, groupData] = await Promise.all([
-            getOrgName(invite.org_id),
-            getProfile(invite.inviter),
-            invite.group_id ? getInviteGroup(invite.group_id, invite.org_id) : null,
-          ]);
+      console.log('[InviteBadge] 🚀 Starting enrichment for', invites.length, 'invites');
 
-          return {
-            ...invite,
-            orgName: orgData?.[0]?.name || invite.org_id,
-            inviterEmail:
-              (inviterData?.success && (inviterData?.data as any)?.email) || invite.inviter,
-            groupName: groupData?.[0]?.role || 'No group',
-          };
-        })
-      );
-      setEnrichedInvites(enriched);
+      try {
+        const enriched = await Promise.all(
+          invites.map(async invite => {
+            console.log('[InviteBadge] 📝 Enriching invite:', invite.id);
+            const [orgData, inviterData, groupData] = await Promise.all([
+              getOrgName(invite.org_id),
+              getProfile(invite.inviter),
+              invite.group_id ? getInviteGroup(invite.group_id, invite.org_id) : null,
+            ]);
+
+            return {
+              ...invite,
+              orgName: orgData?.[0]?.name || invite.org_id,
+              inviterEmail:
+                (inviterData?.success && (inviterData?.data as any)?.email) || invite.inviter,
+              groupName: groupData?.[0]?.role || 'No group',
+            };
+          })
+        );
+        console.log(
+          '[InviteBadge] ✅ Enrichment complete, setting',
+          enriched.length,
+          'enriched invites'
+        );
+        setEnrichedInvites(enriched);
+      } catch (error) {
+        console.error('[InviteBadge] ❌ Error during enrichment:', error);
+        setEnrichedInvites([]);
+      }
     };
 
     enrichInvites();
@@ -70,16 +87,8 @@ export default function InviteBadge({ refreshModels, open = true }: InviteBadgeP
     }
 
     try {
-      // Add user to org
-      await addUserToOrg(invite.org_id, userId);
-
-      // Add user to group if specified
-      if (invite.group_id) {
-        await addUserToGroup(invite.group_id, userId, invite.org_id);
-      }
-
-      // Remove the invite
-      await removeInvite(invite.id);
+      // Use centralized acceptInviteAction with service role permissions
+      await acceptInviteAction(invite.id, userId);
 
       console.log('Invite accepted successfully!');
       await refetch();

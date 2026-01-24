@@ -1,6 +1,9 @@
-import { Model } from "@/lib/supabase/types";
-import { message_format_config } from "@/types/message-format";
-import type { EndpointType, SSEStreamConfig, WebhookStreamConfig } from "@/lib/ai/router/types";
+import { Model } from '@/lib/supabase/types';
+import { message_format_config } from '@/types/message-format';
+import type { EndpointType, StreamConfig, WebhookStreamConfig } from '@/lib/ai/router/types';
+import type { SSEEventMapperConfig } from '@/types/event-mapping';
+
+type SSEStreamConfig = SSEEventMapperConfig;
 
 export interface WizardState {
   // Basic Info
@@ -26,7 +29,7 @@ export interface WizardState {
     content: string;
     conversation_id: string;
     time: string;
-    messages: string
+    messages: string;
   };
 
   // Test Results

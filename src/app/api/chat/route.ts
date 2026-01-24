@@ -15,19 +15,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/server';
 import { z } from 'zod';
-import { type UIMessage } from 'ai';
+import { type UIMessage, convertToModelMessages } from 'ai';
 
 import { getModelData } from '@/actions/chat/models';
 import { createConvo, getConversation } from '@/actions/chat/conversations';
 import { createLogger } from '@/lib/infrastructure/logger';
 import { apiCallLimiter, checkRateLimit } from '@/lib/security/rate-limiter';
+import { verifyJWT } from '@/lib/auth/jwt-verify';
 import {
   routeToEndpoint,
   saveUserMessage,
   wrapResponseWithPersistence,
   type RoutableModel,
 } from '@/lib/ai/router';
-import { createUIMessage, extractTextFromMessage } from '@/utils/formatters/message-parts';
+import { extractTextFromMessage } from '@/utils/message-parts';
 
 const logger = createLogger('api-chat');
 
@@ -55,6 +56,18 @@ type RequestBody = z.infer<typeof requestSchema>;
  * Convert database model to RoutableModel format
  */
 function toRoutableModel(model: any): RoutableModel {
+  console.log('[toRoutableModel] Converting model:', {
+    id: model.id,
+    endpoint: model.endpoint,
+    body_config: model.body_config,
+    body_config_type: typeof model.body_config,
+    body_config_keys:
+      model.body_config && typeof model.body_config === 'object'
+        ? Object.keys(model.body_config)
+        : 'N/A',
+    body_config_stringified: JSON.stringify(model.body_config),
+  });
+
   return {
     id: model.id,
     endpoint: model.endpoint || '',
@@ -116,8 +129,15 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Authentication via Better-Auth middleware
-    const { userId } = await auth();
+    // Authentication: Try Clerk first, then JWT
+    let userId = (await auth()).userId;
+
+    if (!userId) {
+      const authHeader = req.headers.get('authorization');
+      if (authHeader) {
+        userId = await verifyJWT(authHeader);
+      }
+    }
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -135,13 +155,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { messages, model_id, conversationId, org_id } = validation.data;
-
-    logger.info('📨 Received chat request', {
-      messageCount: messages.length,
+    const {
+      messages: uiMessages,
       model_id,
       conversationId,
-      messages: messages.map(m => ({
+      org_id,
+    } = validation.data as {
+      messages: UIMessage[];
+      model_id: string;
+      conversationId?: string;
+      org_id?: string;
+    };
+
+    logger.info('Received chat request', {
+      messageCount: uiMessages.length,
+      model_id,
+      conversationId,
+      messages: uiMessages.map(m => ({
         role: m.role,
         partsCount: m.parts?.length || 0,
         textPreview:
@@ -169,13 +199,10 @@ export async function POST(req: NextRequest) {
     });
 
     // Get the last user message
-    const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+    const lastUserMessage = [...uiMessages].reverse().find(m => m.role === 'user');
     if (!lastUserMessage) {
       return NextResponse.json({ error: 'No user message provided' }, { status: 400 });
     }
-
-    // Extract text content from parts
-    const lastUserMessageText = extractTextFromMessage(lastUserMessage as UIMessage);
 
     // Get or create conversation
     const resolvedConversationId = await getOrCreateConversation(
@@ -183,50 +210,49 @@ export async function POST(req: NextRequest) {
       userId,
       model_id,
       org_id || modelData.org_id,
-      lastUserMessageText
+      extractTextFromMessage(lastUserMessage)
     );
-
-    // Generate a UUID for the message (AI SDK uses short IDs, we need UUIDs)
-    const userMessageId = crypto.randomUUID();
-    const aiSdkMessageId = lastUserMessage.id; // Keep AI SDK ID for mapping
 
     // Save user message with parts
     await saveUserMessage(
       resolvedConversationId,
-      userMessageId,
-      (lastUserMessage.parts || []) as UIMessage['parts'],
-      aiSdkMessageId // Store AI SDK ID for frontend mapping
+      crypto.randomUUID(), // Generate a UUID for the message (AI SDK uses short IDs, we need UUIDs)
+      lastUserMessage.parts || [],
+      lastUserMessage.id // Store AI SDK ID for frontend mapping
     );
 
     // Convert to routable model
     const routableModel = toRoutableModel(modelData);
 
-    // Convert messages to UIMessage format for router
-    const uiMessages: UIMessage[] = messages.map(m =>
-      createUIMessage({
-        id: m.id,
-        role: m.role,
-        parts: (m.parts as UIMessage['parts']) || [],
-        createdAt: m.createdAt ? new Date(m.createdAt) : undefined,
-      })
-    );
-
     // Get AbortSignal from request
     const signal = req.signal;
 
-    // Route to appropriate handler
-    const response = await routeToEndpoint(routableModel, uiMessages, signal);
+    // Route to appropriate handler with conversationId for persistence
+    // - ai-sdk-stream: Direct passthrough, wrap with persistence
+    // - sse: Direct SSE event mapping, wrap with persistence
+    // - webhook: Uses LanguageModelV3 provider with onFinish callback
+    const response = await routeToEndpoint(
+      routableModel,
+      uiMessages,
+      resolvedConversationId,
+      signal
+    );
 
-    // Wrap response with persistence to save assistant message
-    const persistedResponse = wrapResponseWithPersistence(response, resolvedConversationId);
+    // For ai-sdk-stream and sse endpoints, wrap the response with persistence
+    // Webhook endpoints handle persistence via onFinish callback
+    const endpointType = modelData.endpoint_type || 'webhook';
+    const finalResponse =
+      endpointType === 'ai-sdk-stream' || endpointType === 'sse'
+        ? wrapResponseWithPersistence(response, resolvedConversationId)
+        : response;
 
     // Add conversation ID to response headers for client
-    const headers = new Headers(persistedResponse.headers);
+    const headers = new Headers(finalResponse.headers);
     headers.set('X-Conversation-Id', resolvedConversationId);
 
-    return new Response(persistedResponse.body, {
-      status: persistedResponse.status,
-      statusText: persistedResponse.statusText,
+    return new Response(finalResponse.body, {
+      status: finalResponse.status,
+      statusText: finalResponse.statusText,
       headers,
     });
   } catch (error) {

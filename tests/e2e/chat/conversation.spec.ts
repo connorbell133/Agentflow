@@ -1,26 +1,21 @@
-import { test, expect } from '@playwright/test';
-import { loginAsAdmin } from '../utils/auth-helpers';
+import { test } from '../fixtures/test-fixtures';
+import { expect } from '@playwright/test';
 
 test.describe('Chat Conversation', () => {
-    test.beforeEach(async ({ page }) => {
-        await loginAsAdmin(page);
-    });
+  test('should load chat interface', async ({ page, authenticatedUserWithOrg }) => {
+    await page.goto('/');
 
-    test('should load chat interface', async ({ page }) => {
-        await page.goto('/');
+    // Verify chat input is present using data-testid
+    await expect(page.getByTestId('chat-message-input')).toBeVisible({ timeout: 10000 });
 
-        // Verify chat input is present
-        await expect(page.getByPlaceholder(/Type a message/i)).toBeVisible();
+    // Send a message
+    const messageInput = page.getByTestId('chat-message-input');
+    await expect(messageInput).toBeVisible({ timeout: 10000 });
+    await expect(messageInput).toBeEnabled({ timeout: 10000 });
+    await messageInput.fill('Hello from Playwright');
+    await page.keyboard.press('Enter');
 
-        // Send a message
-        const messageInput = page.getByPlaceholder(/Type a message/i);
-        await expect(messageInput).toBeVisible({ timeout: 10000 });
-        await expect(messageInput).toBeEnabled({ timeout: 10000 });
-        await messageInput.fill('Hello from Playwright');
-        await page.keyboard.press('Enter');
-
-        // Verify message appears in the list (optimistic update)
-        await expect(page.getByText('Hello from Playwright')).toBeVisible();
-    });
+    // Verify message appears in the list (optimistic update)
+    await expect(page.getByText('Hello from Playwright')).toBeVisible({ timeout: 10000 });
+  });
 });
-

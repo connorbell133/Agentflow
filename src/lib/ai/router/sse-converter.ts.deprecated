@@ -11,8 +11,11 @@ import {
   type UIMessage,
 } from 'ai';
 import { buildBodyJson, getByPath } from '@/lib/api/model-utils';
-import type { RoutableModel, SimpleMessage, SSEStreamConfig } from './types';
-import { extractTextFromMessage } from '@/utils/formatters/message-parts';
+import type { RoutableModel, SimpleMessage, StreamConfig } from './types';
+import type { SSEEventMapperConfig } from '@/types/event-mapping';
+
+type SSEStreamConfig = SSEEventMapperConfig;
+import { extractTextFromMessage } from '@/utils/message-parts';
 
 /**
  * Default configuration for OpenAI-style SSE streams

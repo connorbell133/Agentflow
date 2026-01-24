@@ -10,11 +10,11 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { type UIMessage, DefaultChatTransport } from 'ai';
-import { useUser } from '@/hooks/auth/use-user';
+import { useSession } from '@/lib/auth/client-helpers';
 import { type Model } from '@/lib/supabase/types';
 import { getConversation, getAllMessages } from '@/actions/chat/conversations';
 import { createLogger } from '@/lib/infrastructure/logger';
-import { createUIMessage } from '@/utils/formatters/message-parts';
+import { createUIMessage } from '@/utils/message-parts';
 
 const logger = createLogger('use-ai-chat');
 
@@ -60,8 +60,8 @@ export interface UseAIChatReturn {
  * Hook for AI SDK chat with conversation management
  */
 export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
-  const { user } = useUser();
-  const userId = user?.id;
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
   const [currentModel, setCurrentModel] = useState<Model | undefined>(options.model);
   const [conversationId, setConversationId] = useState<string | undefined>(options.conversationId);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
@@ -95,30 +95,15 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
           const convId = conversationIdRef.current;
           const orgId = orgIdRef.current || model?.org_id;
 
-          // Send messages in v6 format with parts (not content)
-          // DefaultChatTransport already provides messages in v6 format with parts
-          const formattedMessages = messages.map(m => {
-            const base = {
-              id: m.id,
-              role: m.role,
-              parts: m.parts || [],
-            };
-            if ('createdAt' in m && m.createdAt) {
-              return { ...base, createdAt: m.createdAt as Date };
-            }
-            return base;
-          });
-
           console.log('🔵 [useAIChat] Preparing request (v6 format):', {
             model_id: model?.id,
             org_id: orgId,
             conversationId: convId,
-            messageCount: formattedMessages.length,
-            messages: formattedMessages.map(m => ({
+            messageCount: messages.length,
+            messages: messages.map(m => ({
               id: m.id,
               role: m.role,
               partsCount: m.parts?.length || 0,
-              parts: m.parts,
             })),
           });
 
@@ -126,8 +111,8 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
             model_id: model?.id,
             org_id: orgId,
             conversationId: convId,
-            messageCount: formattedMessages.length,
-            messages: formattedMessages.map(m => ({
+            messageCount: messages.length,
+            messages: messages.map(m => ({
               role: m.role,
               partsCount: m.parts?.length || 0,
             })),
@@ -135,7 +120,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 
           return {
             body: {
-              messages: formattedMessages,
+              messages, // Use messages as-is from DefaultChatTransport
               model_id: model?.id,
               org_id: orgId,
               conversationId: convId,
@@ -143,8 +128,17 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
           };
         },
         fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
-          // Custom fetch to extract X-Conversation-Id header
+          // Custom fetch to extract X-Conversation-Id header and log response
           const response = await fetch(input, init);
+
+          // DIAGNOSTIC: Log response details
+          console.log('🔍 [useAIChat] DIAGNOSTIC - Fetch response:', {
+            url: typeof input === 'string' ? input : input.toString(),
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries()),
+            conversationId: response.headers.get('X-Conversation-Id'),
+          });
 
           // Extract conversation ID from response header
           const newConversationId = response.headers.get('X-Conversation-Id');

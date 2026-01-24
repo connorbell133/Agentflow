@@ -1,0 +1,121 @@
+import { test, expect } from '@playwright/test';
+import { setupAuthenticatedAdmin } from './utils/auth-helpers';
+import {
+  getOrgIdByEmail,
+  getOrCreateGroupId,
+  createTestUserInOrg,
+  addUserToGroupInDatabase,
+  deleteTestUserProfile,
+  deleteGroupFromDatabase,
+} from './utils/db-utils';
+
+test.describe('Debug GroupSelector Props', () => {
+  test('inspect props passed to GroupSelector', async ({ page }) => {
+    // Setup admin user
+    const admin = await setupAuthenticatedAdmin();
+
+    // Create test data
+    const orgId = await getOrgIdByEmail(admin.email);
+    const testUserEmail = `test-user-${Date.now()}@example.com`;
+    const testUserId = await createTestUserInOrg(orgId, testUserEmail, 'Test User');
+    const groupName = `Test Group-${Date.now()}`;
+    const groupId = await getOrCreateGroupId(orgId, groupName);
+
+    console.log(`\n📋 Test Setup:`);
+    console.log(`   Org ID: ${orgId}`);
+    console.log(`   Test User: ${testUserEmail} (${testUserId})`);
+    console.log(`   Test Group: ${groupName} (${groupId})`);
+
+    // Add user to group in database
+    await addUserToGroupInDatabase(orgId, testUserEmail, groupName);
+    console.log(`   ✅ User added to group in database`);
+
+    // Navigate to admin page
+    await page.goto('/admin');
+    await page.waitForLoadState('networkidle');
+
+    // Click Groups tab
+    const groupsTab = page.getByRole('tab', { name: /groups/i });
+    await groupsTab.click();
+    await page.waitForTimeout(1000);
+
+    // Click refresh button
+    const refreshButton = page.getByTestId('refresh-data-button');
+    await refreshButton.click();
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+
+    console.log(`\n🔍 Inspecting AdminDataContext state...`);
+
+    // Inject script to inspect React props
+    const contextData = await page.evaluate(() => {
+      // Find the React fiber node for AdminDataContext
+      const findReactFiber = (element: Element): any => {
+        for (const key in element) {
+          if (key.startsWith('__reactFiber$') || key.startsWith('__reactInternalInstance$')) {
+            return (element as any)[key];
+          }
+        }
+        return null;
+      };
+
+      // Find AdminDataContext provider
+      const root = document.querySelector('[data-testid="admin-dashboard"]');
+      if (!root) return { error: 'Admin dashboard root not found' };
+
+      const fiber = findReactFiber(root);
+      if (!fiber) return { error: 'React fiber not found' };
+
+      // Navigate up to find AdminDataProvider
+      let current = fiber;
+      let contextValue = null;
+
+      while (current) {
+        if (current.type?.name === 'AdminDataProvider') {
+          // Get the context value from memoizedState
+          contextValue = current.memoizedState;
+          break;
+        }
+        if (current.memoizedProps?._reactInternals?.memoizedState) {
+          const state = current.memoizedProps._reactInternals.memoizedState;
+          if (state?.groups || state?.userGroups) {
+            contextValue = state;
+            break;
+          }
+        }
+        current = current.return;
+      }
+
+      return {
+        hasContextValue: !!contextValue,
+        fiberType: current?.type?.name || 'not found',
+      };
+    });
+
+    console.log(`   Context data:`, contextData);
+
+    // Alternative: Check if user chip element exists in DOM
+    const groupRow = page.getByRole('row', { name: new RegExp(`^${groupName}`, 'i') }).first();
+    const userChip = groupRow.locator(`[data-testid="selected-user-${testUserId}"]`);
+    const userChipExists = await userChip.count();
+
+    console.log(`\n🔍 User chip DOM check:`);
+    console.log(`   Exists: ${userChipExists > 0}`);
+
+    if (userChipExists === 0) {
+      // Check if ANY user chips exist
+      const allChips = groupRow.locator('[data-testid^="selected-user-"]');
+      const allChipsCount = await allChips.count();
+      console.log(`   Total user chips in row: ${allChipsCount}`);
+
+      // Get the HTML of the users cell
+      const usersCell = groupRow.locator('td').nth(1);
+      const usersCellHTML = await usersCell.innerHTML();
+      console.log(`   Users cell HTML:\n${usersCellHTML}`);
+    }
+
+    // Cleanup
+    await deleteTestUserProfile(testUserId);
+    await deleteGroupFromDatabase(orgId, groupName);
+  });
+});

@@ -1,11 +1,20 @@
-import React from "react";
+/**
+ * @deprecated This file is no longer used.
+ * The active wizard uses TemplateSelectionStep, RequestConfigurationStep, and ResponseHandlingStep.
+ * This file is kept for reference only.
+ */
+
+import React, { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import HelpText from "@/components/ui/help-text";
-import { WizardState } from "../wizard.types";
-import type { EndpointType, SSEStreamConfig } from "@/lib/ai/router/types";
+import { WizardState } from "@/types/ui/wizard.types";
+import type { EndpointType } from "@/lib/ai/router/types";
+import type { ModelConfigPreset, SSEEventMapperConfig } from "@/types/event-mapping";
+import { getAllAvailablePresets } from "@/actions/chat/presets";
+import { useUser } from "@/hooks/auth/use-user";
 
 interface BasicInfoStepProps {
   state: WizardState;
@@ -32,22 +41,105 @@ const ENDPOINT_TYPE_OPTIONS: { value: EndpointType; label: string; description: 
 ];
 
 export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ state, updateState }) => {
+  const { user, profile } = useUser();
+  const orgId = profile?.org_id;
+  const [presets, setPresets] = useState<ModelConfigPreset[]>([]);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>("");
+  const [loadingPresets, setLoadingPresets] = useState(false);
+
+  // Load presets when component mounts
+  useEffect(() => {
+    const loadPresets = async () => {
+      try {
+        setLoadingPresets(true);
+        const availablePresets = await getAllAvailablePresets(orgId || undefined);
+        setPresets(availablePresets);
+      } catch (error) {
+        console.error('Failed to load presets:', error);
+      } finally {
+        setLoadingPresets(false);
+      }
+    };
+
+    loadPresets();
+  }, [orgId]);
+
+  // Auto-detect matching preset when stream_config is loaded
+  useEffect(() => {
+    if (!state.stream_config || !presets.length || selectedPresetId) {
+      return; // Skip if no config, no presets loaded, or preset already selected
+    }
+
+    // Check if current stream_config matches any preset
+    const matchingPreset = presets.find(preset => {
+      // Deep comparison of event_mappings structure
+      const currentConfig = JSON.stringify(state.stream_config);
+      const presetConfig = JSON.stringify(preset.event_mappings);
+      return currentConfig === presetConfig;
+    });
+
+    if (matchingPreset) {
+      console.log('[Auto-detected preset]', matchingPreset.name);
+      setSelectedPresetId(matchingPreset.id);
+    }
+  }, [state.stream_config, presets, selectedPresetId]);
+
   const handleEndpointTypeChange = (newType: EndpointType) => {
     // Reset stream_config when switching types
     let newStreamConfig = null;
     if (newType === "sse") {
       // Set default SSE config
       newStreamConfig = {
-        contentPath: "choices[0].delta.content",
-        doneSignal: "[DONE]",
-        errorPath: "error.message",
+        event_mappings: [{
+          source_event_type: "data",
+          target_ui_event: "text-delta" as const,
+          field_mappings: {
+            delta: "choices[0].delta.content"
+          }
+        }],
+        done_signal: "[DONE]",
+        error_path: "error.message",
       };
     }
     updateState({ endpoint_type: newType, stream_config: newStreamConfig });
+    setSelectedPresetId(""); // Reset preset selection
   };
 
-  const updateSSEConfig = (updates: Partial<SSEStreamConfig>) => {
-    const currentConfig = (state.stream_config as SSEStreamConfig) || {};
+  const handlePresetSelect = (presetId: string) => {
+    setSelectedPresetId(presetId);
+
+    if (!presetId) {
+      // Reset to default simple config
+      updateState({
+        stream_config: {
+          event_mappings: [{
+            source_event_type: "data",
+            target_ui_event: "text-delta" as const,
+            field_mappings: {
+              delta: "choices[0].delta.content"
+            }
+          }],
+          done_signal: "[DONE]",
+          error_path: "error.message",
+        }
+      });
+      return;
+    }
+
+    const preset = presets.find(p => p.id === presetId);
+    if (preset) {
+      // Store the full event_mappings structure
+      // This includes text_delta, done_signal, error_path, etc.
+      console.log('[Preset Selected]', preset.name, preset.event_mappings);
+      updateState({ stream_config: preset.event_mappings });
+    }
+  };
+
+  const updateSSEConfig = (updates: Partial<SSEEventMapperConfig>) => {
+    // When user manually edits a field, reset preset to custom
+    setSelectedPresetId("");
+
+    const currentConfig = (state.stream_config as SSEEventMapperConfig) || {};
     updateState({ stream_config: { ...currentConfig, ...updates } });
   };
 
@@ -137,38 +229,82 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ state, updateState
           <div className="space-y-4 p-4 rounded-lg border border-dashed border-border bg-muted/30">
             <h4 className="font-medium text-sm">SSE Stream Configuration</h4>
 
+            {/* Preset Selector */}
             <div className="space-y-2">
-              <Label htmlFor="contentPath">Content Path</Label>
-              <Input
-                id="contentPath"
-                placeholder="choices[0].delta.content"
-                value={(state.stream_config as SSEStreamConfig)?.contentPath || ""}
-                onChange={(e) => updateSSEConfig({ contentPath: e.target.value })}
-              />
-              <HelpText>JSON path to extract content delta from each SSE event</HelpText>
+              <Label htmlFor="preset">Configuration Preset (optional)</Label>
+              <select
+                id="preset"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={selectedPresetId}
+                onChange={(e) => handlePresetSelect(e.target.value)}
+                disabled={loadingPresets}
+              >
+                <option value="">Custom configuration</option>
+                {loadingPresets && <option>Loading presets...</option>}
+                {!loadingPresets && presets.length > 0 && (
+                  <>
+                    <optgroup label="System Presets">
+                      {presets.filter(p => p.is_system).map(preset => (
+                        <option key={preset.id} value={preset.id}>
+                          {preset.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                    {presets.filter(p => !p.is_system).length > 0 && (
+                      <optgroup label="Organization Presets">
+                        {presets.filter(p => !p.is_system).map(preset => (
+                          <option key={preset.id} value={preset.id}>
+                            {preset.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </>
+                )}
+              </select>
+              <HelpText>
+                Choose a pre-configured mapping for popular AI providers (OpenAI, Anthropic, etc.) or use custom configuration below
+              </HelpText>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="doneSignal">Done Signal</Label>
-              <Input
-                id="doneSignal"
-                placeholder="[DONE]"
-                value={(state.stream_config as SSEStreamConfig)?.doneSignal || ""}
-                onChange={(e) => updateSSEConfig({ doneSignal: e.target.value })}
-              />
-              <HelpText>Data value that signals stream completion</HelpText>
-            </div>
+            {/* Show preset info when selected */}
+            {selectedPresetId && (
+              <div className="p-3 rounded-md bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
+                <div className="flex items-start gap-2">
+                  <span className="text-green-600 dark:text-green-400 text-lg">✓</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                      Using preset: {presets.find(p => p.id === selectedPresetId)?.name}
+                    </p>
+                    {presets.find(p => p.id === selectedPresetId)?.description && (
+                      <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                        {presets.find(p => p.id === selectedPresetId)?.description}
+                      </p>
+                    )}
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                      SSE stream configuration is ready. Click &quot;Next&quot; to continue.
+                    </p>
+                  </div>
+                </div>
+                <details className="mt-3">
+                  <summary className="text-xs text-green-700 dark:text-green-300 cursor-pointer hover:text-green-900 dark:hover:text-green-100">
+                    View configuration
+                  </summary>
+                  <pre className="mt-2 p-2 bg-black/5 dark:bg-white/5 rounded text-xs overflow-x-auto">
+                    {JSON.stringify(state.stream_config, null, 2)}
+                  </pre>
+                </details>
+              </div>
+            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="errorPath">Error Path (optional)</Label>
-              <Input
-                id="errorPath"
-                placeholder="error.message"
-                value={(state.stream_config as SSEStreamConfig)?.errorPath || ""}
-                onChange={(e) => updateSSEConfig({ errorPath: e.target.value })}
-              />
-              <HelpText>JSON path to extract error messages from events</HelpText>
-            </div>
+            {/* Manual config fields removed - use EventMappingEditor in ResponseHandlingStep */}
+            {!selectedPresetId && (
+              <div className="p-4 border border-amber-300 bg-amber-50 dark:bg-amber-950/20 rounded-md">
+                <p className="text-sm text-amber-900 dark:text-amber-100">
+                  ⚠️ This component is deprecated. Use the new EventMappingEditor in ResponseHandlingStep for SSE configuration.
+                </p>
+              </div>
+            )}
           </div>
         )}
 

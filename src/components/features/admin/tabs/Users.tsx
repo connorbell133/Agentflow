@@ -4,12 +4,13 @@ import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react'
 import { Profile, Organization, Group, Invite } from '@/lib/supabase/types';
 import UserTable from '@/components/features/admin/management/UserTable/UserTable';
 import { useAdminData } from '@/contexts/AdminDataContext';
-import { SkeletonTable } from '@/components/shared/cards/SkeletonCard';
+import { SkeletonTable } from '@/components/common/cards/SkeletonCard';
 import { createLogger } from '@/lib/infrastructure/logger';
 import { getDifferenceInDays } from '@/utils/formatters/date';
+import { useAdminSubscription } from '@/components/features/admin/AdminPageWrapper';
 import { canInviteUsers } from '@/actions/auth/subscription';
 import { useInvites } from '@/hooks/organization/use-invites';
-import LoadingButton from '@/components/shared/buttons/LoadingButton';
+import LoadingButton from '@/components/common/buttons/LoadingButton';
 import {
   Select,
   SelectContent,
@@ -17,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import GenericTable from '@/components/shared/tables/BaseTable';
+import GenericTable from '@/components/common/tables/BaseTable';
 
 interface UsersProps {
   org_id: string;
@@ -213,7 +214,9 @@ const PendingInvites: React.FC<PendingInvitesProps> = ({
 
 // Client component wrapper that handles the interactive parts
 export default function Users({ org_id, currentUser, org }: UsersProps) {
-  const [canInvite, setCanInvite] = useState<boolean>(true); // Always true - full access in open source
+  // Get subscription status from centralized context (prevents multiple useSubscription calls)
+  const { subscription } = useAdminSubscription();
+  const [canInvite, setCanInvite] = useState<boolean>(true); // Default to true for free users
 
   // Check if user can invite using server action
   useEffect(() => {
