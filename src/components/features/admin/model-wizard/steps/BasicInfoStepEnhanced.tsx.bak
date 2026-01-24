@@ -1,0 +1,532 @@
+/**
+ * Enhanced Basic Info Step
+ *
+ * @deprecated This file is no longer used.
+ * The active wizard uses TemplateSelectionStep, RequestConfigurationStep, and ResponseHandlingStep.
+ * This file is kept for reference only.
+ *
+ * Improved UX with:
+ * - Mode switcher (Preset / Custom / Advanced)
+ * - Live configuration preview
+ * - Edit-as-custom workflow
+ * - Better preset selection UI
+ * - Smart suggestions
+ */
+
+import React, { useEffect, useState, useCallback } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import HelpText from "@/components/ui/help-text";
+import { WizardState } from "@/types/ui/wizard.types";
+import type { ConfigurationMode } from "@/types/ui/wizard-modes.types";
+import type { EndpointType } from "@/lib/ai/router/types";
+import type { ModelConfigPreset, SSEEventMapperConfig } from "@/types/event-mapping";
+import { getAllAvailablePresets } from "@/actions/chat/presets";
+import { useUser } from "@/hooks/auth/use-user";
+import { ConfigurationModeSwitcher } from "../components/ConfigurationModeSwitcher";
+import { ConfigurationPreview } from "../components/ConfigurationPreview";
+import { EditPresetAsCustom } from "../components/EditPresetAsCustom";
+
+interface BasicInfoStepEnhancedProps {
+  state: WizardState;
+  updateState: (updates: Partial<WizardState>) => void;
+  [key: string]: any;
+}
+
+const ENDPOINT_TYPE_OPTIONS: { value: EndpointType; label: string; description: string }[] = [
+  {
+    value: "webhook",
+    label: "Webhook (JSON)",
+    description: "Standard JSON response - platform converts to streaming",
+  },
+  {
+    value: "ai-sdk-stream",
+    label: "AI SDK Stream",
+    description: "Pass-through for AI SDK agents (UIMessageStream format)",
+  },
+  {
+    value: "sse",
+    label: "SSE (OpenAI-style)",
+    description: "Server-Sent Events like OpenAI API - platform converts to streaming",
+  },
+];
+
+export const BasicInfoStepEnhanced: React.FC<BasicInfoStepEnhancedProps> = ({ state, updateState }) => {
+  const { orgId } = useAuth();
+
+  // State management
+  const [presets, setPresets] = useState<ModelConfigPreset[]>([]);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>("");
+  const [loadingPresets, setLoadingPresets] = useState(false);
+  const [configMode, setConfigMode] = useState<ConfigurationMode>('preset');
+
+  // Track base preset for custom mode
+  const [basePresetId, setBasePresetId] = useState<string | null>(null);
+
+  // Load presets
+  useEffect(() => {
+    const loadPresets = async () => {
+      try {
+        setLoadingPresets(true);
+        const availablePresets = await getAllAvailablePresets(orgId || undefined);
+        setPresets(availablePresets);
+      } catch (error) {
+        console.error('Failed to load presets:', error);
+      } finally {
+        setLoadingPresets(false);
+      }
+    };
+
+    loadPresets();
+  }, [orgId]);
+
+  // Auto-detect preset when loading existing model
+  useEffect(() => {
+    if (!state.stream_config || !presets.length || selectedPresetId) {
+      return;
+    }
+
+    const matchingPreset = presets.find(preset => {
+      const currentConfig = JSON.stringify(state.stream_config);
+      const presetConfig = JSON.stringify(preset.event_mappings);
+      return currentConfig === presetConfig;
+    });
+
+    if (matchingPreset) {
+      console.log('[Auto-detected preset]', matchingPreset.name);
+      setSelectedPresetId(matchingPreset.id);
+      setConfigMode('preset');
+    } else if (state.stream_config) {
+      // Has config but doesn't match any preset - custom mode
+      setConfigMode('custom');
+    }
+  }, [state.stream_config, presets, selectedPresetId]);
+
+  const handleEndpointTypeChange = (newType: EndpointType) => {
+    let newStreamConfig = null;
+    if (newType === "sse") {
+      newStreamConfig = {
+        event_mappings: [{
+          source_event_type: "data",
+          target_ui_event: "text-delta" as const,
+          field_mappings: { delta: "choices[0].delta.content" }
+        }],
+        done_signal: "[DONE]",
+        error_path: "error.message",
+      };
+      setConfigMode('custom'); // Start in custom mode
+    }
+    updateState({ endpoint_type: newType, stream_config: newStreamConfig });
+    setSelectedPresetId("");
+    setBasePresetId(null);
+  };
+
+  const handlePresetSelect = useCallback((presetId: string) => {
+    setSelectedPresetId(presetId);
+    setConfigMode('preset');
+    setBasePresetId(presetId);
+
+    if (!presetId) {
+      updateState({
+        stream_config: {
+          event_mappings: [{
+            source_event_type: "data",
+            target_ui_event: "text-delta" as const,
+            field_mappings: { delta: "choices[0].delta.content" }
+          }],
+          done_signal: "[DONE]",
+          error_path: "error.message",
+        }
+      });
+      setConfigMode('custom');
+      return;
+    }
+
+    const preset = presets.find(p => p.id === presetId);
+    if (preset) {
+      console.log('[Preset Selected]', preset.name, preset.event_mappings);
+      updateState({ stream_config: preset.event_mappings });
+    }
+  }, [presets, updateState]);
+
+  const handleEditAsCustom = useCallback(() => {
+    if (!selectedPresetId) return;
+
+    const preset = presets.find(p => p.id === selectedPresetId);
+    if (!preset) return;
+
+    // Keep the configuration but switch to custom mode
+    setConfigMode('custom');
+    setBasePresetId(selectedPresetId);
+    setSelectedPresetId(""); // Clear preset selection to show custom fields
+
+    console.log('[Edit as Custom]', preset.name);
+  }, [selectedPresetId, presets]);
+
+  const handleModeChange = useCallback((newMode: ConfigurationMode) => {
+    if (newMode === configMode) return;
+
+    // Mode switching logic
+    if (newMode === 'preset' && basePresetId) {
+      // Switching back to preset
+      setSelectedPresetId(basePresetId);
+      const preset = presets.find(p => p.id === basePresetId);
+      if (preset) {
+        updateState({ stream_config: preset.event_mappings });
+      }
+    } else if (newMode === 'custom') {
+      // Switching to custom
+      setSelectedPresetId("");
+    } else if (newMode === 'advanced') {
+      // Switching to advanced (visual mapper)
+      // TODO: Implement advanced mode
+      alert('Advanced mode coming soon! This will provide a visual event mapper.');
+      return;
+    }
+
+    setConfigMode(newMode);
+  }, [configMode, basePresetId, presets, updateState]);
+
+  const updateSSEConfig = useCallback((updates: Partial<SSEEventMapperConfig>) => {
+    const currentConfig = (state.stream_config as SSEEventMapperConfig) || {};
+    updateState({ stream_config: { ...currentConfig, ...updates } });
+  }, [state.stream_config, updateState]);
+
+  const selectedPreset = presets.find(p => p.id === selectedPresetId);
+  const basePreset = basePresetId ? presets.find(p => p.id === basePresetId) : null;
+
+  return (
+    <div className="space-y-8 max-w-4xl">
+      <div>
+        <p className="text-muted-foreground">
+          Provide the essential details for your model configuration.
+        </p>
+      </div>
+
+      {/* Basic Fields */}
+      <div className="grid gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Name *</Label>
+          <Input
+            id="name"
+            required
+            placeholder="e.g. GPT-4 Chat"
+            value={state.nice_name}
+            onChange={(e) => updateState({ nice_name: e.target.value })}
+            data-testid="wizard-input-name"
+          />
+          <HelpText>A descriptive name that will be displayed in the model selection interface</HelpText>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="model_id">Model ID (optional)</Label>
+          <Input
+            id="model_id"
+            placeholder={state.nice_name.replace(/\s+/g, "-").toLowerCase() || "gpt-4-chat"}
+            value={state.model_id}
+            onChange={(e) => updateState({ model_id: e.target.value })}
+            data-testid="wizard-input-model-id"
+          />
+          <HelpText>Unique identifier for API calls. Will be auto-generated from the name if left empty</HelpText>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="endpoint">Endpoint URL *</Label>
+          <Input
+            id="endpoint"
+            type="url"
+            required
+            placeholder="https://api.openai.com/v1/chat/completions"
+            value={state.endpoint}
+            onChange={(e) => updateState({ endpoint: e.target.value })}
+            data-testid="wizard-input-endpoint"
+          />
+          <HelpText>The complete URL where requests will be sent. Include protocol (https://)</HelpText>
+        </div>
+
+        {/* Endpoint Type Selection */}
+        <div className="space-y-3">
+          <Label>Endpoint Type *</Label>
+          <div className="grid gap-2">
+            {ENDPOINT_TYPE_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  state.endpoint_type === option.value
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-muted-foreground/50"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="endpoint_type"
+                  value={option.value}
+                  checked={state.endpoint_type === option.value}
+                  onChange={() => handleEndpointTypeChange(option.value)}
+                  className="mt-1"
+                />
+                <div>
+                  <div className="font-medium">{option.label}</div>
+                  <div className="text-sm text-muted-foreground">{option.description}</div>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* SSE Configuration Section */}
+        {state.endpoint_type === "sse" && (
+          <div className="space-y-6 p-6 rounded-lg border border-border bg-card">
+            <h3 className="text-lg font-medium">SSE Stream Configuration</h3>
+
+            {/* Mode Switcher */}
+            <ConfigurationModeSwitcher
+              currentMode={configMode}
+              onModeChange={handleModeChange}
+              hasUnsavedChanges={false}
+            />
+
+            {/* Preset Mode */}
+            {configMode === 'preset' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="preset">Select Configuration Template</Label>
+                  <select
+                    id="preset"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    value={selectedPresetId}
+                    onChange={(e) => handlePresetSelect(e.target.value)}
+                    disabled={loadingPresets}
+                  >
+                    <option value="">Choose a preset...</option>
+                    {loadingPresets && <option>Loading presets...</option>}
+                    {!loadingPresets && presets.length > 0 && (
+                      <>
+                        <optgroup label="System Presets">
+                          {presets.filter(p => p.is_system).map(preset => (
+                            <option key={preset.id} value={preset.id}>
+                              {preset.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                        {presets.filter(p => !p.is_system).length > 0 && (
+                          <optgroup label="Organization Presets">
+                            {presets.filter(p => !p.is_system).map(preset => (
+                              <option key={preset.id} value={preset.id}>
+                                {preset.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </>
+                    )}
+                  </select>
+                  <HelpText>
+                    Choose a pre-configured mapping for popular AI providers (OpenAI, Anthropic, etc.)
+                  </HelpText>
+                </div>
+
+                {selectedPreset && (
+                  <>
+                    <ConfigurationPreview
+                      config={selectedPreset.event_mappings}
+                      presetName={selectedPreset.name}
+                    />
+
+                    <EditPresetAsCustom
+                      presetName={selectedPreset.name}
+                      presetDescription={selectedPreset.description}
+                      onEdit={handleEditAsCustom}
+                    />
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Custom Mode */}
+            {configMode === 'custom' && (
+              <div className="space-y-4">
+                {basePreset && (
+                  <div className="p-3 rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                    <p className="text-sm text-blue-900 dark:text-blue-100">
+                      📝 Based on: <strong>{basePreset.name}</strong>
+                    </p>
+                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                      You&apos;re editing a customized version of this preset
+                    </p>
+                  </div>
+                )}
+
+                <div className="p-4 border border-amber-300 bg-amber-50 dark:bg-amber-950/20 rounded-md">
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-2">
+                    ⚠️ Deprecated Component
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    This component is deprecated. Use the new EventMappingEditor in ResponseHandlingStep
+                    for SSE configuration with full event mapping support.
+                  </p>
+                </div>
+
+                <ConfigurationPreview
+                  config={state.stream_config as any}
+                />
+              </div>
+            )}
+
+            {/* Advanced Mode (Coming Soon) */}
+            {configMode === 'advanced' && (
+              <div className="p-8 text-center border border-dashed rounded-lg">
+                <span className="text-4xl mb-4 block">🔧</span>
+                <h4 className="font-medium mb-2">Visual Event Mapper</h4>
+                <p className="text-sm text-muted-foreground">
+                  Advanced mode with drag-and-drop event mapping is coming soon!
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Rest of the form fields... */}
+        <div className="space-y-2">
+          <Label htmlFor="schema">Schema (optional)</Label>
+          <Input
+            id="schema"
+            placeholder="Model schema identifier"
+            value={state.schema}
+            onChange={(e) => updateState({ schema: e.target.value })}
+          />
+          <HelpText>Optional schema version identifier</HelpText>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <Input
+            id="description"
+            value={state.description}
+            onChange={(e) => updateState({ description: e.target.value })}
+            placeholder="Short description of what this model does..."
+            data-testid="wizard-input-description"
+          />
+          <HelpText>Brief description explaining what this model does</HelpText>
+        </div>
+      </div>
+
+      {/* Headers Section */}
+      <div>
+        <h4 className="text-base font-medium mb-2">Request Headers</h4>
+        <HelpText className="mb-4">
+          Add HTTP headers required for authentication. Sensitive values are automatically masked.
+        </HelpText>
+
+        <div className="space-y-3">
+          {state.headersPairs.map((pair, idx) => {
+            const isSecret = /authorization|api-key|x-api-key|secret/i.test(pair.key);
+            return (
+              <div key={pair.id} className="grid grid-cols-12 gap-2 items-center">
+                <div className="col-span-5">
+                  <Input
+                    placeholder="Key (e.g. Authorization)"
+                    value={pair.key}
+                    onChange={(e) => {
+                      const next = [...state.headersPairs];
+                      next[idx] = { ...pair, key: e.target.value };
+                      updateState({ headersPairs: next });
+                    }}
+                  />
+                </div>
+                <div className="col-span-6">
+                  <Input
+                    placeholder="Value"
+                    type={isSecret ? "password" : "text"}
+                    value={pair.value}
+                    onChange={(e) => {
+                      const next = [...state.headersPairs];
+                      next[idx] = { ...pair, value: e.target.value };
+                      updateState({ headersPairs: next });
+                    }}
+                  />
+                </div>
+                <div className="col-span-1 flex justify-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      updateState({
+                        headersPairs: state.headersPairs.filter((p) => p.id !== pair.id)
+                      });
+                    }}
+                  >
+                    ×
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => updateState({
+              headersPairs: [...state.headersPairs, { id: uuidv4(), key: "", value: "" }]
+            })}
+          >
+            Add Header
+          </Button>
+        </div>
+      </div>
+
+      {/* Suggestion Prompts */}
+      <div>
+        <h4 className="text-base font-medium mb-2">Suggestion Prompts</h4>
+        <HelpText className="mb-4">
+          Add suggested prompts that will appear in the chat interface
+        </HelpText>
+
+        <div className="space-y-3">
+          {state.suggestion_prompts.map((prompt, idx) => (
+            <div key={prompt.id} className="flex gap-2 items-center">
+              <div className="flex-1">
+                <Input
+                  placeholder={`Example prompt ${idx + 1}`}
+                  value={prompt.prompt}
+                  onChange={(e) => {
+                    const next = [...state.suggestion_prompts];
+                    next[idx] = { ...prompt, prompt: e.target.value };
+                    updateState({ suggestion_prompts: next });
+                  }}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  updateState({
+                    suggestion_prompts: state.suggestion_prompts.filter((p) => p.id !== prompt.id)
+                  });
+                }}
+              >
+                ×
+              </Button>
+            </div>
+          ))}
+          {state.suggestion_prompts.length < 3 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => updateState({
+                suggestion_prompts: [...state.suggestion_prompts, { id: uuidv4(), prompt: "" }]
+              })}
+            >
+              Add Suggestion Prompt
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

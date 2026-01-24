@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/lib/auth/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { verifyJWT } from '@/lib/auth/jwt-verify';
 import { getTenantContext } from '@/lib/db/tenant-context';
 
 export async function GET(
@@ -9,23 +8,11 @@ export async function GET(
   { params }: { params: { id: string } }
 ): Promise<NextResponse<any>> {
   try {
-    // Authenticate user
-    const authResult = await auth();
-    let userId = authResult.userId;
-
-    // If no userId from Clerk auth, try JWT verification (for external clients like React Native)
-    if (!userId) {
-      const authHeader = req.headers.get('authorization');
-      if (authHeader) {
-        userId = await verifyJWT(authHeader);
-      }
-    }
+    // Authenticate user via Better-Auth
+    const { userId } = await auth();
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get tenant context to verify org access
@@ -45,10 +32,7 @@ export async function GET(
         .single();
 
       if (convError || !conversation) {
-        return NextResponse.json(
-          { error: 'Conversation not found' },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
       }
     } else {
       // If user has no org, check if conversation belongs to them directly
@@ -60,10 +44,7 @@ export async function GET(
         .single();
 
       if (convError || !conversation) {
-        return NextResponse.json(
-          { error: 'Conversation not found' },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
       }
     }
 
@@ -76,18 +57,12 @@ export async function GET(
 
     if (messagesError) {
       console.error('Error fetching messages:', messagesError);
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     return NextResponse.json(messages ?? []);
   } catch (error) {
     console.error('Error fetching messages:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

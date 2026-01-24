@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { removeInvite } from "@/actions/organization/invites";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { removeInvite } from '@/actions/organization/invites';
 
 export async function POST(
   _request: NextRequest,
@@ -19,36 +19,27 @@ export async function POST(
       .single();
 
     if (inviteError || !invite) {
-      return NextResponse.json(
-        { error: { message: "Invite not found" } },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: { message: 'Invite not found' } }, { status: 404 });
     }
 
-    const user = await currentUser();
-    const userId = user?.id;
+    const { userId } = await auth();
 
     if (!userId) {
-      return NextResponse.json(
-        { error: { message: "Unauthorized" } },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: { message: 'Unauthorized' } }, { status: 401 });
     }
 
     // Add user to the group if groupId exists
     if (invite.group_id) {
-      const { error: groupMapError } = await supabase
-        .from('group_map')
-        .insert({
-          user_id: userId,
-          group_id: invite.group_id,
-          org_id: invite.org_id
-        });
+      const { error: groupMapError } = await supabase.from('group_map').insert({
+        user_id: userId,
+        group_id: invite.group_id,
+        org_id: invite.org_id,
+      });
 
       if (groupMapError) {
-        console.error("Error adding user to group:", groupMapError);
+        console.error('Error adding user to group:', groupMapError);
         return NextResponse.json(
-          { error: { message: "Failed to add user to group" } },
+          { error: { message: 'Failed to add user to group' } },
           { status: 500 }
         );
       }
@@ -59,14 +50,11 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: "Invite accepted successfully"
+      message: 'Invite accepted successfully',
     });
   } catch (error) {
-    console.error("Error accepting invite:", error);
-    return NextResponse.json(
-      { error: { message: "Failed to accept invite" } },
-      { status: 500 }
-    );
+    console.error('Error accepting invite:', error);
+    return NextResponse.json({ error: { message: 'Failed to accept invite' } }, { status: 500 });
   }
 }
 
@@ -83,13 +71,10 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: "Invite declined successfully"
+      message: 'Invite declined successfully',
     });
   } catch (error) {
-    console.error("Error declining invite:", error);
-    return NextResponse.json(
-      { error: { message: "Failed to decline invite" } },
-      { status: 500 }
-    );
+    console.error('Error declining invite:', error);
+    return NextResponse.json({ error: { message: 'Failed to decline invite' } }, { status: 500 });
   }
 }

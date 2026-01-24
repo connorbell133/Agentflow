@@ -1,9 +1,13 @@
-"use client";
+'use client';
 
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { Profile, Group, Model, GroupMap, ModelMap, Conversation } from '@/lib/supabase/types';
 import { getOrgUsers } from '@/actions/auth/users';
-import { getOrgModels, addModel as addModelAction, updateModel as updateModelAction } from '@/actions/chat/models';
+import {
+  getOrgModels,
+  addModel as addModelAction,
+  updateModel as updateModelAction,
+} from '@/actions/chat/models';
 import {
   getGroups,
   getAllUserGroups,
@@ -12,10 +16,14 @@ import {
   addUserToGroup,
   removeUserFromGroup,
   addModelToGroup,
-  removeModelFromGroup
+  removeModelFromGroup,
 } from '@/actions/organization/group';
 import { getAllModelGroups } from '@/actions/chat/models';
-import { getOrgUsersLastConversation, getOrgConversations, type ConversationFilters } from '@/actions/chat/conversations';
+import {
+  getOrgUsersLastConversation,
+  getOrgConversations,
+  type ConversationFilters,
+} from '@/actions/chat/conversations';
 import { getOrgInvites } from '@/actions/organization/invites';
 import { createLogger } from '@/lib/infrastructure/logger';
 
@@ -100,14 +108,14 @@ export function AdminDataProvider({ children, org_id, initialData }: AdminDataPr
     data: initialData?.users || [],
     hasMore: initialData?.users?.length === 50,
     page: 1,
-    isLoading: false
+    isLoading: false,
   });
 
   const [conversations, setConversations] = useState<PaginatedData<Conversation>>({
     data: initialData?.conversations || [],
     hasMore: initialData?.conversations?.length === 50,
     page: 1,
-    isLoading: false
+    isLoading: false,
   });
 
   // Filter state
@@ -119,13 +127,17 @@ export function AdminDataProvider({ children, org_id, initialData }: AdminDataPr
   const [userGroups, setUserGroups] = useState<GroupMap[]>(initialData?.userGroups || []);
   const [modelGroups, setModelGroups] = useState<ModelMap[]>(initialData?.modelGroups || []);
   const [invites, setInvites] = useState<any[]>(initialData?.invites || []);
-  const [userActivity, setUserActivity] = useState<Record<string, string | null>>(initialData?.userActivity || {});
-  const [stats, setStats] = useState(initialData?.stats || {
-    userCount: 0,
-    groupCount: 0,
-    modelCount: 0,
-    conversationCount: 0
-  });
+  const [userActivity, setUserActivity] = useState<Record<string, string | null>>(
+    initialData?.userActivity || {}
+  );
+  const [stats, setStats] = useState(
+    initialData?.stats || {
+      userCount: 0,
+      groupCount: 0,
+      modelCount: 0,
+      conversationCount: 0,
+    }
+  );
 
   const [isLoading, setIsLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
@@ -162,7 +174,7 @@ export function AdminDataProvider({ children, org_id, initialData }: AdminDataPr
         data: [...prev.data, ...(newUsers || [])],
         hasMore: (newUsers || []).length === 50,
         page: nextPage,
-        isLoading: false
+        isLoading: false,
       }));
     } catch (err) {
       logger.error('Error loading more users:', err);
@@ -174,34 +186,48 @@ export function AdminDataProvider({ children, org_id, initialData }: AdminDataPr
   const loadMoreConversations = useCallback(async () => {
     if (!conversations.hasMore || conversations.isLoading) return;
 
-    logger.info('Loading more conversations', { currentPage: conversations.page, filters: conversationFilters });
+    logger.info('Loading more conversations', {
+      currentPage: conversations.page,
+      filters: conversationFilters,
+    });
     setConversations(prev => ({ ...prev, isLoading: true }));
 
     try {
       const nextPage = conversations.page + 1;
-      const result = await getOrgConversations(org_id, { page: nextPage, limit: 50 }, conversationFilters);
+      const result = await getOrgConversations(
+        org_id,
+        { page: nextPage, limit: 50 },
+        conversationFilters
+      );
       const newConversations = result.data || [];
 
       setConversations(prev => ({
         data: [...prev.data, ...newConversations],
         hasMore: newConversations.length === 50,
         page: nextPage,
-        isLoading: false
+        isLoading: false,
       }));
     } catch (err) {
       logger.error('Error loading more conversations:', err);
       setConversations(prev => ({ ...prev, isLoading: false }));
     }
-  }, [org_id, conversations.hasMore, conversations.isLoading, conversations.page, conversationFilters]);
+  }, [
+    org_id,
+    conversations.hasMore,
+    conversations.isLoading,
+    conversations.page,
+    conversationFilters,
+  ]);
 
   // Refresh all data
   const refresh = useCallback(async () => {
     if (fetchInProgress.current) return;
 
-    // Don't auto-refresh on mount if we have initial data
+    // Reset the flag but DON'T return - we want to fetch even on first manual refresh
     if (hasInitialData.current) {
+      logger.info('Manual refresh triggered - clearing initialData flag and fetching fresh data');
       hasInitialData.current = false;
-      return;
+      // IMPORTANT: Don't return here - continue to fetch!
     }
 
     logger.info('Refreshing all admin data for org:', org_id);
@@ -218,7 +244,7 @@ export function AdminDataProvider({ children, org_id, initialData }: AdminDataPr
         userGroupsData,
         modelGroupsData,
         invitesData,
-        lastConvosData
+        lastConvosData,
       ] = await Promise.all([
         getOrgUsers(org_id, { page: 1, limit: 50 }),
         getOrgConversations(org_id, { page: 1, limit: 50 }, conversationFilters),
@@ -227,7 +253,7 @@ export function AdminDataProvider({ children, org_id, initialData }: AdminDataPr
         getAllUserGroups(org_id),
         getAllModelGroups(org_id),
         getOrgInvites(org_id),
-        getOrgUsersLastConversation(org_id)
+        getOrgUsersLastConversation(org_id),
       ]);
 
       // Update users
@@ -235,7 +261,7 @@ export function AdminDataProvider({ children, org_id, initialData }: AdminDataPr
         data: usersData || [],
         hasMore: (usersData || []).length === 50,
         page: 1,
-        isLoading: false
+        isLoading: false,
       });
 
       // Update conversations
@@ -243,7 +269,7 @@ export function AdminDataProvider({ children, org_id, initialData }: AdminDataPr
         data: conversationsResult.data || [],
         hasMore: (conversationsResult.data || []).length === 50,
         page: 1,
-        isLoading: false
+        isLoading: false,
       });
 
       // Update other data
@@ -265,7 +291,7 @@ export function AdminDataProvider({ children, org_id, initialData }: AdminDataPr
         userCount: usersData?.length || 0,
         groupCount: groupsData?.length || 0,
         modelCount: modelsData?.length || 0,
-        conversationCount: conversationsResult.data?.length || 0
+        conversationCount: conversationsResult.data?.length || 0,
       });
 
       logger.info('Admin data refreshed successfully');
@@ -284,7 +310,7 @@ export function AdminDataProvider({ children, org_id, initialData }: AdminDataPr
       const [groupsData, userGroupsData, modelGroupsData] = await Promise.all([
         getGroups(org_id),
         getAllUserGroups(org_id),
-        getAllModelGroups(org_id)
+        getAllModelGroups(org_id),
       ]);
 
       setGroups(groupsData || []);
@@ -300,7 +326,7 @@ export function AdminDataProvider({ children, org_id, initialData }: AdminDataPr
     try {
       const [modelsData, modelGroupsData] = await Promise.all([
         getOrgModels(org_id),
-        getAllModelGroups(org_id)
+        getAllModelGroups(org_id),
       ]);
 
       setModels(modelsData || []);
@@ -311,55 +337,77 @@ export function AdminDataProvider({ children, org_id, initialData }: AdminDataPr
   }, [org_id]);
 
   // Group mutations
-  const addGroup = useCallback(async (name: string, description: string) => {
-    const result = await addGroupAction(name, description, org_id);
-    await refreshGroups();
-    return result;
-  }, [org_id, refreshGroups]);
+  const addGroup = useCallback(
+    async (name: string, description: string) => {
+      const result = await addGroupAction(name, description, org_id);
+      await refreshGroups();
+      return result;
+    },
+    [org_id, refreshGroups]
+  );
 
-  const deleteGroup = useCallback(async (groupId: string) => {
-    await deleteGroupAction(groupId);
-    await refreshGroups();
-  }, [refreshGroups]);
+  const deleteGroup = useCallback(
+    async (groupId: string) => {
+      await deleteGroupAction(groupId);
+      await refreshGroups();
+    },
+    [refreshGroups]
+  );
 
   // User group mapping
   // Note: Uses ref instead of state to prevent callback recreation on state change
-  const updateUserGroup = useCallback(async (userId: string, groupId: string) => {
-    const userGroupExists = userGroupsRef.current.some(ug => ug.user_id === userId && ug.group_id === groupId);
+  const updateUserGroup = useCallback(
+    async (userId: string, groupId: string) => {
+      const userGroupExists = userGroupsRef.current.some(
+        ug => ug.user_id === userId && ug.group_id === groupId
+      );
 
-    if (userGroupExists) {
-      await removeUserFromGroup(groupId, userId, org_id);
-    } else {
-      await addUserToGroup(groupId, userId, org_id);
-    }
+      if (userGroupExists) {
+        await removeUserFromGroup(groupId, userId, org_id);
+      } else {
+        await addUserToGroup(groupId, userId, org_id);
+      }
 
-    await refreshGroups();
-  }, [org_id, refreshGroups]);
+      await refreshGroups();
+    },
+    [org_id, refreshGroups]
+  );
 
   // Model group mapping
   // Note: Uses ref instead of state to prevent callback recreation on state change
-  const updateModelGroup = useCallback(async (model_id: string, groupId: string) => {
-    const modelGroupExists = modelGroupsRef.current.some(mg => mg.model_id === model_id && mg.group_id === groupId);
+  const updateModelGroup = useCallback(
+    async (model_id: string, groupId: string) => {
+      const modelGroupExists = modelGroupsRef.current.some(
+        mg => mg.model_id === model_id && mg.group_id === groupId
+      );
 
-    if (modelGroupExists) {
-      await removeModelFromGroup(model_id, groupId, org_id);
-    } else {
-      await addModelToGroup(model_id, groupId, org_id);
-    }
+      if (modelGroupExists) {
+        await removeModelFromGroup(model_id, groupId, org_id);
+      } else {
+        await addModelToGroup(model_id, groupId, org_id);
+      }
 
-    await refreshGroups();
-  }, [org_id, refreshGroups]);
+      await refreshGroups();
+    },
+    [org_id, refreshGroups]
+  );
 
   // Model mutations
-  const addModel = useCallback(async (model: Model) => {
-    await addModelAction(model);
-    await refreshModels();
-  }, [refreshModels]);
+  const addModel = useCallback(
+    async (model: Model) => {
+      await addModelAction(model);
+      await refreshModels();
+    },
+    [refreshModels]
+  );
 
-  const updateModel = useCallback(async (model: Model) => {
-    await updateModelAction(model);
-    await refreshModels();
-  }, [refreshModels]);
+  const updateModel = useCallback(
+    async (model: Model) => {
+      await updateModelAction(model);
+      await refreshModels();
+    },
+    [refreshModels]
+  );
 
   // Track if this is the initial mount
   const isInitialMount = useRef(true);
@@ -381,14 +429,18 @@ export function AdminDataProvider({ children, org_id, initialData }: AdminDataPr
       setConversations(prev => ({ ...prev, isLoading: true }));
 
       try {
-        const result = await getOrgConversations(org_id, { page: 1, limit: 50 }, conversationFilters);
+        const result = await getOrgConversations(
+          org_id,
+          { page: 1, limit: 50 },
+          conversationFilters
+        );
         const newConversations = result.data || [];
 
         setConversations({
           data: newConversations,
           hasMore: newConversations.length === 50,
           page: 1,
-          isLoading: false
+          isLoading: false,
         });
       } catch (err) {
         logger.error('Error loading filtered conversations:', err);
@@ -405,32 +457,34 @@ export function AdminDataProvider({ children, org_id, initialData }: AdminDataPr
   }, [conversationFilters, org_id]);
 
   return (
-    <AdminDataContext.Provider value={{
-      users,
-      conversations,
-      groups,
-      models,
-      userGroups,
-      modelGroups,
-      invites,
-      userActivity,
-      stats,
-      isLoading,
-      error,
-      conversationFilters,
-      setConversationFilters,
-      loadMoreUsers,
-      loadMoreConversations,
-      refresh,
-      refreshGroups,
-      refreshModels,
-      addGroup,
-      deleteGroup,
-      updateUserGroup,
-      updateModelGroup,
-      addModel,
-      updateModel
-    }}>
+    <AdminDataContext.Provider
+      value={{
+        users,
+        conversations,
+        groups,
+        models,
+        userGroups,
+        modelGroups,
+        invites,
+        userActivity,
+        stats,
+        isLoading,
+        error,
+        conversationFilters,
+        setConversationFilters,
+        loadMoreUsers,
+        loadMoreConversations,
+        refresh,
+        refreshGroups,
+        refreshModels,
+        addGroup,
+        deleteGroup,
+        updateUserGroup,
+        updateModelGroup,
+        addModel,
+        updateModel,
+      }}
+    >
       {children}
     </AdminDataContext.Provider>
   );

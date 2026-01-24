@@ -10,11 +10,11 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { type UIMessage, DefaultChatTransport } from 'ai';
-import { useAuth } from '@clerk/nextjs';
+import { useSession } from '@/lib/auth/client-helpers';
 import { type Model } from '@/lib/supabase/types';
 import { getConversation, getAllMessages } from '@/actions/chat/conversations';
 import { createLogger } from '@/lib/infrastructure/logger';
-import { createUIMessage } from '@/utils/formatters/message-parts';
+import { createUIMessage } from '@/utils/message-parts';
 
 const logger = createLogger('use-ai-chat');
 
@@ -60,7 +60,8 @@ export interface UseAIChatReturn {
  * Hook for AI SDK chat with conversation management
  */
 export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
-  const { userId } = useAuth();
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
   const [currentModel, setCurrentModel] = useState<Model | undefined>(options.model);
   const [conversationId, setConversationId] = useState<string | undefined>(options.conversationId);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
@@ -94,30 +95,15 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
           const convId = conversationIdRef.current;
           const orgId = orgIdRef.current || model?.org_id;
 
-          // Send messages in v6 format with parts (not content)
-          // DefaultChatTransport already provides messages in v6 format with parts
-          const formattedMessages = messages.map((m) => {
-            const base = {
-              id: m.id,
-              role: m.role,
-              parts: m.parts || [],
-            };
-            if ('createdAt' in m && m.createdAt) {
-              return { ...base, createdAt: m.createdAt as Date };
-            }
-            return base;
-          });
-
           console.log('🔵 [useAIChat] Preparing request (v6 format):', {
             model_id: model?.id,
             org_id: orgId,
             conversationId: convId,
-            messageCount: formattedMessages.length,
-            messages: formattedMessages.map(m => ({ 
-              id: m.id, 
-              role: m.role, 
+            messageCount: messages.length,
+            messages: messages.map(m => ({
+              id: m.id,
+              role: m.role,
               partsCount: m.parts?.length || 0,
-              parts: m.parts 
             })),
           });
 
@@ -125,16 +111,16 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
             model_id: model?.id,
             org_id: orgId,
             conversationId: convId,
-            messageCount: formattedMessages.length,
-            messages: formattedMessages.map(m => ({ 
-              role: m.role, 
-              partsCount: m.parts?.length || 0 
+            messageCount: messages.length,
+            messages: messages.map(m => ({
+              role: m.role,
+              partsCount: m.parts?.length || 0,
             })),
           });
 
           return {
             body: {
-              messages: formattedMessages,
+              messages, // Use messages as-is from DefaultChatTransport
               model_id: model?.id,
               org_id: orgId,
               conversationId: convId,
@@ -142,8 +128,17 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
           };
         },
         fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
-          // Custom fetch to extract X-Conversation-Id header
+          // Custom fetch to extract X-Conversation-Id header and log response
           const response = await fetch(input, init);
+
+          // DIAGNOSTIC: Log response details
+          console.log('🔍 [useAIChat] DIAGNOSTIC - Fetch response:', {
+            url: typeof input === 'string' ? input : input.toString(),
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries()),
+            conversationId: response.headers.get('X-Conversation-Id'),
+          });
 
           // Extract conversation ID from response header
           const newConversationId = response.headers.get('X-Conversation-Id');
@@ -171,13 +166,13 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
   } = useChat({
     transport,
     onFinish: ({ message }) => {
-      logger.info('Message finished', { 
-        messageId: message.id, 
+      logger.info('Message finished', {
+        messageId: message.id,
         role: message.role,
         parts: message.parts,
-        partsCount: message.parts?.length || 0
+        partsCount: message.parts?.length || 0,
       });
-      
+
       // Log tool invocations if present
       if (message.parts) {
         const toolParts = message.parts.filter((p: any) => p.type === 'tool-invocation');
@@ -186,7 +181,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
         }
       }
     },
-    onError: (error) => {
+    onError: error => {
       logger.error('Chat error', { error });
       console.error('❌ [useAIChat] Chat error:', error);
       options.onError?.(error);
@@ -203,7 +198,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
         lastMessageParts: lastMessage.parts,
         lastMessagePartsCount: lastMessage.parts?.length || 0,
       });
-      
+
       // Check for tool invocations
       if (lastMessage.parts) {
         const toolParts = lastMessage.parts.filter((p: any) => p.type === 'tool-invocation');
@@ -282,10 +277,10 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
         const dbMessages = await getAllMessages(convId);
 
         // Convert database messages to UI format
-        const uiMessages: UIMessage[] = dbMessages.map((msg) => {
+        const uiMessages: UIMessage[] = dbMessages.map(msg => {
           // Use ai_sdk_id if available (for feedback mapping), fallback to database UUID
           const messageId = msg.ai_sdk_id || msg.id;
-          
+
           return createUIMessage({
             id: messageId,
             role: msg.role as 'user' | 'assistant' | 'system',
@@ -294,10 +289,13 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
           });
         });
 
-        console.log('🔵 [loadConversation] Loaded messages with IDs:', uiMessages.map(m => ({
-          id: m.id,
-          role: m.role,
-        })));
+        console.log(
+          '🔵 [loadConversation] Loaded messages with IDs:',
+          uiMessages.map(m => ({
+            id: m.id,
+            role: m.role,
+          }))
+        );
 
         setConversationId(convId);
         setMessages(uiMessages);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import { useUser } from '@/hooks/auth/use-user';
 import { getUserProfile } from '@/actions/auth/users';
 import { getModelsForUser } from '@/actions/chat/models-optimized';
 import { getConversationList } from '@/actions/chat/conversations';
@@ -22,7 +22,8 @@ interface ChatDataState {
  * This replaces sequential loading with a single parallel fetch operation
  */
 export const useChatData = () => {
-  const { userId } = useAuth();
+  const { user } = useUser();
+  const userId = user?.id;
   const [state, setState] = useState<ChatDataState>({
     profile: null,
     models: [],
@@ -46,7 +47,7 @@ export const useChatData = () => {
         const [profileData, modelsData, conversationsResult] = await Promise.all([
           getUserProfile(userId),
           getModelsForUser(userId),
-          getConversationList(userId, { page: 0, limit: 20 }) // Initial load of 20 conversations
+          getConversationList(userId, { page: 0, limit: 20 }), // Initial load of 20 conversations
         ]);
 
         const profile = (profileData as any)?.[0] || null;

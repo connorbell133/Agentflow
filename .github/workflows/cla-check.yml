@@ -13,6 +13,7 @@ permissions:
   pull-requests: write
   issues: write
   contents: read
+  statuses: write
 
 jobs:
   check-trivial:
@@ -135,23 +136,17 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const message = `👋 Thanks for contributing to AgentFlow!
-
-**Quick legal thing:** We need you to agree to our CLA. **Takes 10 seconds, one-time only.**
-
-📄 [Read the CLA (2 min read)](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/CLA.md)
-
-**To sign**, just comment:
-\`\`\`
-I agree to the CLA
-\`\`\`
-
-**Why?** You keep your copyright. This just lets us include your work in both our open-source (AGPL) and commercial versions.
-
-**Future PRs?** Once signed, you're done forever! All future contributions are auto-approved. 🎉
-
----
-*This is a backup CLA checker. If you've already signed via the CLA Assistant bot, you can ignore this.*`;
+            const message = '👋 Thanks for contributing to AgentFlow!\n\n' +
+              '**Quick legal thing:** We need you to agree to our CLA. **Takes 10 seconds, one-time only.**\n\n' +
+              '📄 [Read the CLA (2 min read)](https://github.com/Agent-Flow-AI/chat_platform/blob/main/CLA.md)\n\n' +
+              '**To sign**, just comment:\n' +
+              '```\n' +
+              'I agree to the CLA\n' +
+              '```\n\n' +
+              '**Why?** You keep your copyright. This just lets us include your work in both our open-source (AGPL) and commercial versions.\n\n' +
+              '**Future PRs?** Once signed, you\'re done forever! All future contributions are auto-approved. 🎉\n\n' +
+              '---\n' +
+              '*This is a backup CLA checker. If you\'ve already signed via the CLA Assistant bot, you can ignore this.*';
 
             // Check if we've already commented
             const comments = await github.rest.issues.listComments({
@@ -216,9 +211,8 @@ I agree to the CLA
         uses: actions/github-script@v7
         with:
           script: |
-            const message = `✅ **CLA signed!** You're all set—this applies to all your future contributions too.
-
-Thank you for contributing! 🙌`;
+            const message = '✅ **CLA signed!** You\'re all set—this applies to all your future contributions too.\n\n' +
+              'Thank you for contributing! 🙌';
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,

@@ -1,28 +1,29 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Conversation, Message, Model } from "@/lib/supabase/types"
+import { Conversation, Message, Model } from '@/lib/supabase/types';
 import { v4 as uuidv4 } from 'uuid';
-import { useAuth } from '@clerk/nextjs';
-import { createLogger } from "@/lib/infrastructure/logger";
+import { useUser } from '@/hooks/auth/use-user';
+import { createLogger } from '@/lib/infrastructure/logger';
 import {
   addMessage,
   createConvo,
   getConversation,
   getConversations,
   getAllMessages,
-  getOrgConversations
-} from "@/actions/chat/conversations";
+  getOrgConversations,
+} from '@/actions/chat/conversations';
 
-const logger = createLogger("use-conversations");
+const logger = createLogger('use-conversations');
 
 export const useConversations = () => {
   // State variables
-  const { userId } = useAuth();
+  const { user } = useUser();
+  const userId = user?.id;
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setConversation] = useState<Conversation | null>(null);
   const [currentConversationMessages, setCurrentConversationMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [inputText, setInputText] = useState("");
+  const [inputText, setInputText] = useState('');
 
   const fetchConversations = useCallback(async () => {
     if (!userId) return;
@@ -53,7 +54,6 @@ export const useConversations = () => {
         throw new Error('Conversation not found.');
       }
       setConversation(response[0] as Conversation);
-
     } catch (err) {
       logger.error('Error fetching conversation:', err);
       setError('Failed to fetch conversation.');
@@ -93,13 +93,13 @@ export const useConversations = () => {
       setError('Failed to fetch messages.');
     }
 
-    logger.info("Conversation selected:", conversationId);
+    logger.info('Conversation selected:', conversationId);
   };
 
   const newConversation = async () => {
     setConversation(null);
     setCurrentConversationMessages([]);
-  }
+  };
 
   const getOrCreateConversation = async (userId: string, selectedModel: Model) => {
     let conversationId = currentConversation?.id || null;
@@ -119,7 +119,7 @@ export const useConversations = () => {
         const response = await createConvo(newConversation);
 
         conversationId = newConversation.id;
-        setConversations((prev) => [...prev, newConversation]);
+        setConversations(prev => [...prev, newConversation]);
         setConversation(newConversation);
         return conversationId;
       } else {
@@ -131,7 +131,7 @@ export const useConversations = () => {
       setError('Failed to create conversation.');
       throw err;
     }
-  }
+  };
 
   const updateConversation = async (conversationId: string) => {
     const updatedMessages = await getAllMessages(conversationId);
@@ -150,19 +150,23 @@ export const useConversations = () => {
     }));
 
     setCurrentConversationMessages(mappedMessages);
-  }
+  };
 
-  const prepareAndSendMessage = async (inputText: string, selectedModel: Model, conversationId: string) => {
+  const prepareAndSendMessage = async (
+    inputText: string,
+    selectedModel: Model,
+    conversationId: string
+  ) => {
     // Prepare API request body
-    const messages = currentConversationMessages.map((message) => ({
+    const messages = currentConversationMessages.map(message => ({
       role: message.role,
-      content: message.content
+      content: message.content,
     }));
 
     // Push most recent message
     messages.push({
       role: 'user',
-      content: inputText
+      content: inputText,
     });
 
     logger.debug('DEBUG: messages array before adding to requestBody:', messages);
@@ -174,7 +178,7 @@ export const useConversations = () => {
       vars: {
         time: new Date().toISOString(),
         user: userId,
-        messages: messages,  // ← Add the full messages array
+        messages: messages, // ← Add the full messages array
       },
     };
     logger.debug('Request body prepared for API call:', requestBody);
@@ -194,7 +198,7 @@ export const useConversations = () => {
     }
     const data = await response.json();
     return data;
-  }
+  };
 
   const sendMessage = async (inputText: string, selectedModel: Model) => {
     // Validate input args
@@ -238,7 +242,6 @@ export const useConversations = () => {
         conversation_id: conversationId,
       });
       await updateConversation(conversationId);
-
     } catch (err) {
       logger.error('Error sending message:', err);
       setError('Failed to send message.');
@@ -258,7 +261,7 @@ export const useConversations = () => {
     currentConversationMessages,
     isLoading,
     error,
-    refetch: fetchConversations
+    refetch: fetchConversations,
   };
 };
 

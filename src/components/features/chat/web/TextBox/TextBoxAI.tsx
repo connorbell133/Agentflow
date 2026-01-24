@@ -12,12 +12,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/utils/cn';
 import { ChevronDown, ArrowUp, Square } from 'lucide-react';
 import { Model } from '@/lib/supabase/types';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 
 export interface TextBoxAIProps {
   /** Placeholder texts to cycle through */
@@ -64,7 +59,7 @@ export function TextBoxAI({
   // Placeholder animation
   const startAnimation = useCallback(() => {
     intervalRef.current = setInterval(() => {
-      setCurrentPlaceholder((prev) => (prev + 1) % placeholders.length);
+      setCurrentPlaceholder(prev => (prev + 1) % placeholders.length);
     }, 3000);
   }, [placeholders.length]);
 
@@ -123,7 +118,7 @@ export function TextBoxAI({
   };
 
   const handleModelSelect = (model_id: string) => {
-    const model = models.find((m) => m.id === model_id);
+    const model = models.find(m => m.id === model_id);
     if (model && onModelChange) {
       onModelChange(model);
     }
@@ -138,16 +133,16 @@ export function TextBoxAI({
   return (
     <form
       className={cn(
-        'w-full max-w-4xl relative mx-auto rounded-2xl overflow-visible transition duration-200',
-        disabled && 'opacity-50 cursor-not-allowed'
+        'relative mx-auto w-full max-w-4xl overflow-visible rounded-2xl transition duration-200',
+        disabled && 'cursor-not-allowed opacity-50'
       )}
       onSubmit={handleFormSubmit}
     >
-      <fieldset className="flex flex-col items-center gap-0 bg-white dark:bg-[#3d3d3b] rounded-2xl p-1.5 border border-gray-200 dark:border-[#525250]">
-        <div className="flex items-stretch gap-0 w-full">
+      <fieldset className="flex flex-col items-center gap-0 rounded-2xl border border-gray-200 bg-white p-1.5 dark:border-[#525250] dark:bg-[#3d3d3b]">
+        <div className="flex w-full items-stretch gap-0">
           {/* Input Area */}
           <div
-            className="flex-1 relative min-h-[52px] cursor-text"
+            className="relative min-h-[52px] flex-1 cursor-text"
             onClick={() => inputRef.current?.focus()}
           >
             <textarea
@@ -158,15 +153,16 @@ export function TextBoxAI({
               disabled={disabled}
               rows={1}
               className={cn(
-                'w-full relative text-base z-50 border-none text-gray-900 dark:text-[#FAF9F5] bg-transparent resize-none focus:outline-none focus:ring-0 py-3.5 px-3',
+                'relative z-50 w-full resize-none border-none bg-transparent px-3 py-3.5 text-base text-gray-900 focus:outline-none focus:ring-0 dark:text-[#FAF9F5]',
                 disabled && 'cursor-not-allowed'
               )}
               style={{ minHeight: '28px', maxHeight: '200px' }}
               aria-label="Message input"
+              data-testid="chat-message-input"
             />
 
             {/* Animated Placeholder */}
-            <div className="absolute inset-0 flex items-center pointer-events-none px-3">
+            <div className="pointer-events-none absolute inset-0 flex items-center px-3">
               <AnimatePresence mode="wait">
                 {!value && placeholders.length > 0 && (
                   <motion.p
@@ -175,7 +171,7 @@ export function TextBoxAI({
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: -15, opacity: 0 }}
                     transition={{ duration: 0.3, ease: 'linear' }}
-                    className="text-gray-400 dark:text-[#6b6b69] text-base font-normal text-left w-full truncate"
+                    className="w-full truncate text-left text-base font-normal text-gray-400 dark:text-[#6b6b69]"
                   >
                     {placeholders[currentPlaceholder]}
                   </motion.p>
@@ -185,14 +181,14 @@ export function TextBoxAI({
           </div>
         </div>
 
-        <div className="flex items-stretch gap-0 w-full justify-between">
+        <div className="flex w-full items-stretch justify-between gap-0">
           {/* Left Controls */}
-          <div className="flex items-center gap-0 shrink-0 flex-1 relative">
+          <div className="relative flex flex-1 shrink-0 items-center gap-0">
             {/* Reserved for future buttons like New Chat, Settings, etc. */}
           </div>
 
           {/* Right Controls */}
-          <div className="flex items-center gap-1.5 shrink-0 pr-1 justify-end">
+          <div className="flex shrink-0 items-center justify-end gap-1.5 pr-1">
             {/* Model Selector Dropdown */}
             {models.length > 0 && (
               <Select
@@ -202,27 +198,27 @@ export function TextBoxAI({
               >
                 <SelectTrigger
                   className={cn(
-                    'h-auto px-3 py-2 bg-transparent border-none text-gray-700 dark:text-[#FAF9F5] hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors focus:ring-0 focus:ring-offset-0',
-                    (disabled || isStreaming) && 'opacity-50 cursor-not-allowed'
+                    'h-auto rounded-xl border-none bg-transparent px-3 py-2 text-gray-700 transition-colors hover:bg-gray-100 focus:ring-0 focus:ring-offset-0 dark:text-[#FAF9F5] dark:hover:bg-white/5',
+                    (disabled || isStreaming) && 'cursor-not-allowed opacity-50'
                   )}
                   disabled={disabled || isStreaming}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium whitespace-nowrap">
+                    <span className="whitespace-nowrap text-sm font-medium">
                       {selectedModel?.nice_name || 'Select Model'}
                     </span>
                     <ChevronDown
-                      className="w-4 h-4 text-gray-500 dark:text-[#b3b3b0]"
+                      className="h-4 w-4 text-gray-500 dark:text-[#b3b3b0]"
                       strokeWidth={2}
                     />
                   </div>
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-[#2a2a28] backdrop-blur-md border border-gray-200 dark:border-[#525250]">
-                  {models.map((model) => (
+                <SelectContent className="border border-gray-200 bg-white backdrop-blur-md dark:border-[#525250] dark:bg-[#2a2a28]">
+                  {models.map(model => (
                     <SelectItem
                       key={model.id}
                       value={model.id}
-                      className="text-gray-900 dark:text-[#FAF9F5] focus:bg-gray-100 dark:focus:bg-white/10 focus:text-gray-900 dark:focus:text-[#FAF9F5]"
+                      className="text-gray-900 focus:bg-gray-100 focus:text-gray-900 dark:text-[#FAF9F5] dark:focus:bg-white/10 dark:focus:text-[#FAF9F5]"
                     >
                       {model.nice_name}
                     </SelectItem>
@@ -236,26 +232,26 @@ export function TextBoxAI({
               <button
                 type="button"
                 onClick={handleStopClick}
-                className="p-2 rounded-xl transition-all shrink-0 bg-red-500 hover:bg-red-600 text-white"
+                className="shrink-0 rounded-xl bg-red-500 p-2 text-white transition-all hover:bg-red-600"
                 aria-label="Stop streaming"
                 title="Stop (Esc)"
               >
-                <Square className="w-5 h-5" strokeWidth={2} fill="currentColor" />
+                <Square className="h-5 w-5" strokeWidth={2} fill="currentColor" />
               </button>
             ) : (
               <button
                 type="submit"
                 disabled={disabled || !value.trim()}
                 className={cn(
-                  'p-2 rounded-xl transition-all disabled:cursor-not-allowed shrink-0',
+                  'shrink-0 rounded-xl p-2 transition-all disabled:cursor-not-allowed',
                   value.trim() && !disabled
-                    ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
-                    : 'bg-gray-300 dark:bg-[#525250] text-gray-500 dark:text-[#6b6b69]'
+                    ? 'hover:bg-primary/90 bg-primary text-primary-foreground'
+                    : 'bg-gray-300 text-gray-500 dark:bg-[#525250] dark:text-[#6b6b69]'
                 )}
                 aria-label="Send message"
                 title="Send (Cmd+Enter)"
               >
-                <ArrowUp className="w-5 h-5" strokeWidth={2} />
+                <ArrowUp className="h-5 w-5" strokeWidth={2} />
               </button>
             )}
           </div>

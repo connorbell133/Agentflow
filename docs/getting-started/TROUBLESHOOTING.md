@@ -13,6 +13,7 @@ Common issues and solutions for AgentFlow setup and operation.
 **Causes & Solutions:**
 
 #### Docker Not Running
+
 ```bash
 # Check Docker status
 docker ps
@@ -23,6 +24,7 @@ docker ps
 ```
 
 #### Port Conflicts
+
 ```bash
 # Check what's using Supabase ports
 lsof -i :54321  # API port
@@ -39,6 +41,7 @@ supabase start
 ```
 
 #### Corrupted Supabase State
+
 ```bash
 # Stop Supabase
 supabase stop
@@ -57,6 +60,7 @@ supabase start
 **Solutions:**
 
 #### Clear npm Cache
+
 ```bash
 # Clear npm cache
 npm cache clean --force
@@ -69,6 +73,7 @@ npm install
 ```
 
 #### Node Version Mismatch
+
 ```bash
 # Check Node version (needs 18+)
 node --version
@@ -79,6 +84,7 @@ node --version
 ```
 
 #### Permission Errors
+
 ```bash
 # Don't use sudo with npm!
 # Instead, fix npm permissions:
@@ -97,12 +103,13 @@ source ~/.zshrc
 **Symptom:** App crashes on startup with environment variable errors
 
 **Check:**
+
 ```bash
 # 1. Verify .env.local exists
 ls -la .env.local
 
 # 2. Check file has all required variables
-cat .env.local | grep -E "SUPABASE|CLERK|CRON_SECRET"
+cat .env.local | grep -E "SUPABASE|CRON_SECRET|NEXT_PUBLIC_APP_URL"
 
 # 3. Check for syntax errors (no spaces around =)
 # ✅ CORRECT: API_KEY=abc123
@@ -114,6 +121,7 @@ npm run dev
 ```
 
 **Required Variables Checklist:**
+
 ```env
 ✅ NEXT_PUBLIC_SUPABASE_URL
 ✅ NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -130,6 +138,7 @@ npm run dev
 **Symptom:** Variables are set but app doesn't see them
 
 **Solutions:**
+
 ```bash
 # 1. File must be named .env.local (not .env)
 mv .env .env.local
@@ -153,6 +162,7 @@ ls -la | grep env
 **Causes & Solutions:**
 
 #### Wrong Webhook Secret
+
 ```bash
 # 1. Get secret from Clerk Dashboard → Webhooks → Your Endpoint
 # 2. Copy the "Signing Secret"
@@ -162,6 +172,7 @@ CLERK_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxx
 ```
 
 #### Missing Webhook Secret
+
 ```bash
 # Check if variable exists
 grep CLERK_WEBHOOK_SECRET .env.local
@@ -177,6 +188,7 @@ echo "CLERK_WEBHOOK_SECRET=whsec_your_secret" >> .env.local
 **Causes & Solutions:**
 
 #### Tunnel Not Running
+
 ```bash
 # Start tunnel
 npm run tunnel
@@ -188,6 +200,7 @@ lt --port 3000 --subdomain agentflow-yourname
 ```
 
 #### Wrong URL in Clerk
+
 ```
 # Clerk Dashboard → Webhooks → Your Endpoint
 # URL should be: https://your-tunnel.loca.lt/api/clerk/webhook
@@ -217,6 +230,7 @@ lt --port 3000 --subdomain agentflow-yourname
 ```
 
 **Common Causes:**
+
 - Webhook never fired (check Clerk logs)
 - Webhook failed (check server logs)
 - Database error (check Supabase logs)
@@ -226,6 +240,7 @@ lt --port 3000 --subdomain agentflow-yourname
 **Symptom:** Error when trying to create organization
 
 **Fix:**
+
 ```bash
 # 1. Go to Clerk Dashboard → Organizations
 # 2. Toggle "Enable Organizations" to ON
@@ -241,6 +256,7 @@ lt --port 3000 --subdomain agentflow-yourname
 **Symptom:** `supabase db reset` wipes everything
 
 **Understanding:**
+
 ```bash
 # supabase db reset does:
 # 1. Drops ALL tables
@@ -255,6 +271,7 @@ lt --port 3000 --subdomain agentflow-yourname
 ```
 
 **Alternatives:**
+
 ```bash
 # Apply single migration
 supabase db push
@@ -273,6 +290,7 @@ supabase db push
 **Symptom:** `supabase db reset` fails with SQL errors
 
 **Debug:**
+
 ```bash
 # 1. Check migration files
 ls supabase/migrations/
@@ -291,6 +309,7 @@ supabase db reset --force
 **Symptom:** App can't reach Supabase database
 
 **Check:**
+
 ```bash
 # 1. Verify Supabase is running
 supabase status
@@ -313,18 +332,21 @@ supabase status
 **Causes & Solutions:**
 
 #### Model Not Assigned to Group
+
 ```bash
 # Fix: Admin → Groups → Your Group → Models tab
 # Click "Add Model" → Select your model
 ```
 
 #### User Not in Group
+
 ```bash
 # Fix: Admin → Groups → Your Group → Members tab
 # Click "Add Member" → Select your user
 ```
 
 #### Model Disabled
+
 ```bash
 # Fix: Admin → Models → Your Model
 # Toggle "Enabled" to ON
@@ -335,6 +357,7 @@ supabase status
 **Symptom:** "Test Connection" button returns error
 
 #### Error 401: Invalid API Key
+
 ```bash
 # Causes:
 # - Wrong API key
@@ -349,6 +372,7 @@ supabase status
 ```
 
 #### Error 404: Endpoint Not Found
+
 ```bash
 # Cause: Wrong endpoint URL in configuration
 
@@ -360,6 +384,7 @@ supabase status
 ```
 
 #### Error: Cannot Parse Response
+
 ```bash
 # Cause: response_path doesn't match API response structure
 
@@ -379,6 +404,7 @@ supabase status
 **Symptom:** Test connection succeeds, but chat doesn't work
 
 **Debug:**
+
 ```bash
 # 1. Open browser console (F12)
 # Look for JavaScript errors
@@ -404,6 +430,7 @@ supabase status
 **Symptom:** Type message, click send, nothing happens
 
 **Debug:**
+
 ```bash
 # 1. Check browser console (F12 → Console)
 # Look for errors
@@ -423,6 +450,7 @@ supabase status
 **Symptom:** Can chat but conversation disappears on refresh
 
 **Causes:**
+
 ```bash
 # 1. Database connection issue
 # Check: Supabase Studio → conversations table
@@ -439,6 +467,7 @@ supabase status
 **Symptom:** Response starts loading but stops mid-sentence
 
 **Causes:**
+
 ```bash
 # 1. API timeout
 # Check: API provider dashboard for timeout settings
@@ -459,6 +488,7 @@ supabase status
 **Symptom:** Redirected or see "Access Denied"
 
 **Causes:**
+
 ```bash
 # 1. Not an Owner or Admin
 # Fix: Have organization owner upgrade your role
@@ -476,6 +506,7 @@ supabase status
 **Symptom:** Users see AI models from other groups
 
 **Debug:**
+
 ```bash
 # 1. Check group assignments
 # Admin → Groups → Check which models are assigned
@@ -492,6 +523,7 @@ supabase status
 **Symptom:** Group changes don't take effect
 
 **Fix:**
+
 ```bash
 # 1. Refresh browser (Ctrl+R or Cmd+R)
 # 2. Sign out and sign back in
@@ -508,6 +540,7 @@ supabase status
 **Symptom:** Pages take >3 seconds to load
 
 **Solutions:**
+
 ```bash
 # 1. Check database query performance
 # Supabase Studio → Database → Performance Insights
@@ -527,6 +560,7 @@ npm run dev
 **Symptom:** Typing or scrolling is slow
 
 **Solutions:**
+
 ```bash
 # 1. Check for large message history
 # Limit to last 50 messages per conversation
@@ -549,6 +583,7 @@ npm run dev
 **Common Errors:**
 
 #### TypeScript Errors
+
 ```bash
 # Fix type errors before building
 npm run type-check
@@ -557,6 +592,7 @@ npm run type-check
 ```
 
 #### Missing Environment Variables
+
 ```bash
 # Build requires all env vars set
 # Set in Vercel/hosting platform
@@ -567,6 +603,7 @@ npm run build
 ```
 
 #### Out of Memory
+
 ```bash
 # Increase Node memory
 NODE_OPTIONS=--max_old_space_size=4096 npm run build
@@ -577,6 +614,7 @@ NODE_OPTIONS=--max_old_space_size=4096 npm run build
 **Symptom:** App works locally but not in production
 
 **Check:**
+
 ```bash
 # 1. Environment variables set in hosting platform
 # Vercel → Project → Settings → Environment Variables
@@ -632,6 +670,7 @@ npm run dev > debug.log 2>&1
 ### Creating a Good Issue
 
 Include:
+
 1. **What you were trying to do**
 2. **What you expected to happen**
 3. **What actually happened**
@@ -640,6 +679,7 @@ Include:
 6. **Steps to reproduce**
 
 **Good Example:**
+
 ```
 Title: "Clerk webhook returns 401 on user.created event"
 
@@ -680,6 +720,7 @@ Don't give up! The AgentFlow community is here to help.
 ---
 
 **Most issues can be resolved by:**
+
 1. Restarting the dev server
 2. Checking environment variables
 3. Clearing cache and rebuilding

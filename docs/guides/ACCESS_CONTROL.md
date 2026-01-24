@@ -28,11 +28,13 @@ An organization represents a completely isolated tenant in AgentFlow. Data, user
 ### Organization Creation
 
 **During Onboarding:**
-1. User signs up via Clerk
+
+1. User signs up via Supabase Auth
 2. Completes onboarding flow
 3. Creates organization (or joins existing via invite)
 
 **Via Invite:**
+
 1. Existing user invites new user
 2. New user receives email invite
 3. Clicks link → Signs up → Joins organization
@@ -40,12 +42,14 @@ An organization represents a completely isolated tenant in AgentFlow. Data, user
 ### Organization Roles
 
 #### Owner
+
 - Full control over organization
 - Can delete organization
 - Manage billing (future feature)
 - All Admin permissions
 
 #### Admin
+
 - Manage AI models (create, edit, delete)
 - Manage groups
 - Invite and manage users
@@ -53,6 +57,7 @@ An organization represents a completely isolated tenant in AgentFlow. Data, user
 - Cannot delete organization
 
 #### Guest
+
 - Limited access to assigned conversations
 - Cannot create new AI models
 - Cannot manage users or groups
@@ -67,6 +72,7 @@ An organization represents a completely isolated tenant in AgentFlow. Data, user
 A group is a collection of users within an organization. Groups control which users can access which AI models.
 
 **Example:**
+
 ```
 Organization: Acme Corp
 ├── Group: Engineering
@@ -83,6 +89,7 @@ Organization: Acme Corp
 ### Creating Groups
 
 **Via Admin Dashboard:**
+
 1. Navigate to Admin → Groups
 2. Click "Create Group"
 3. Enter:
@@ -91,6 +98,7 @@ Organization: Acme Corp
 4. Click "Create"
 
 **Best Practices:**
+
 - Name groups by department, role, or subscription tier
 - Use descriptions to clarify purpose
 - Create groups before assigning models
@@ -108,6 +116,7 @@ Organization: Acme Corp
 ### Adding Users to Groups
 
 **Method 1: Via Group Page**
+
 1. Navigate to group
 2. Click "Members" tab
 3. Click "Add Member"
@@ -115,6 +124,7 @@ Organization: Acme Corp
 5. Click "Add"
 
 **Method 2: Via User Page**
+
 1. Navigate to Admin → Users
 2. Click user
 3. Click "Groups" tab
@@ -148,6 +158,7 @@ Each department only sees their AI tools.
 ```
 
 **Setup:**
+
 1. Create group per department
 2. Connect department-specific AI models
 3. Assign users to their department group
@@ -172,6 +183,7 @@ Access automatically updates when subscription changes.
 ```
 
 **Implementation:**
+
 1. Create groups for each tier
 2. Assign appropriate models
 3. On subscription change:
@@ -198,6 +210,7 @@ Hierarchical access - higher roles get more models.
 ```
 
 **Implementation:**
+
 - New employees → "All Employees" group
 - Promoted to manager → Add to "Managers" (keep "All Employees")
 - Promoted to executive → Add to "Executives" (keep both previous)
@@ -221,6 +234,7 @@ Users move between groups as projects change.
 ```
 
 **Workflow:**
+
 1. New project starts → Create group
 2. Assign team members → Add to group
 3. Connect project-specific AI → Assign to group
@@ -248,6 +262,7 @@ Complete data isolation between clients.
 ```
 
 **Setup:**
+
 - Each client = Separate organization
 - Complete database isolation via RLS
 - You (agency) manage as admin of each org
@@ -261,6 +276,7 @@ Complete data isolation between clients.
 **Problem:** Alice is in both Engineering and Marketing
 
 **Solution:** Add Alice to both groups
+
 ```
 Alice's Groups:
 ├── Engineering Team
@@ -276,11 +292,13 @@ Alice sees all 4 models in her chat interface.
 **Problem:** Give intern temporary access to premium AI
 
 **Solution 1: Time-bound group membership**
+
 1. Add intern to "Premium" group
 2. Set calendar reminder
 3. Remove after internship ends
 
 **Solution 2: Project-specific group**
+
 1. Create "Summer Intern 2025" group
 2. Assign AI models
 3. Add all interns
@@ -291,6 +309,7 @@ Alice sees all 4 models in her chat interface.
 **Problem:** Sales team needs GPT-4 but not code models
 
 **Solution:** Create specific groups
+
 ```
 Groups:
 ├── Sales Team
@@ -306,6 +325,7 @@ GPT-4 assigned to both, Code Assistant only to Engineering.
 **Problem:** Want to test new model with small group before rollout
 
 **Solution:**
+
 1. Create "Beta Testers" group
 2. Add 3-5 volunteer users
 3. Assign new AI model to group
@@ -319,28 +339,33 @@ GPT-4 assigned to both, Code Assistant only to Engineering.
 ### Owner Permissions
 
 **Organization Management:**
+
 - ✅ Delete organization
 - ✅ Transfer ownership
 - ✅ Manage billing (future)
 
 **User Management:**
+
 - ✅ Invite users
 - ✅ Change user roles
 - ✅ Remove users
 - ✅ View all users
 
 **Group Management:**
+
 - ✅ Create/edit/delete groups
 - ✅ Assign models to groups
 - ✅ Add/remove users from groups
 
 **Model Management:**
+
 - ✅ Import/create AI models
 - ✅ Edit model configurations
 - ✅ Delete models
 - ✅ Test connections
 
 **Settings:**
+
 - ✅ Change organization settings
 - ✅ View analytics (future)
 - ✅ Export data
@@ -348,28 +373,33 @@ GPT-4 assigned to both, Code Assistant only to Engineering.
 ### Admin Permissions
 
 **Organization Management:**
+
 - ❌ Delete organization
 - ❌ Transfer ownership
 - ❌ Manage billing
 
 **User Management:**
+
 - ✅ Invite users
 - ✅ Change user roles (except Owner)
 - ✅ Remove users
 - ✅ View all users
 
 **Group Management:**
+
 - ✅ Create/edit/delete groups
 - ✅ Assign models to groups
 - ✅ Add/remove users from groups
 
 **Model Management:**
+
 - ✅ Import/create AI models
 - ✅ Edit model configurations
 - ✅ Delete models
 - ✅ Test connections
 
 **Settings:**
+
 - ✅ Change most organization settings
 - ✅ View analytics (future)
 - ❌ Critical settings (reserved for Owner)
@@ -377,18 +407,23 @@ GPT-4 assigned to both, Code Assistant only to Engineering.
 ### Guest Permissions
 
 **Organization Management:**
+
 - ❌ All restricted
 
 **User Management:**
+
 - ❌ All restricted
 
 **Group Management:**
+
 - ❌ All restricted
 
 **Model Management:**
+
 - ❌ All restricted
 
 **Chat:**
+
 - ✅ View assigned conversations
 - ✅ Send messages in assigned conversations
 - ✅ View conversation history
@@ -401,12 +436,14 @@ GPT-4 assigned to both, Code Assistant only to Engineering.
 ### Group Design
 
 **Do:**
+
 - ✅ Create groups based on access needs
 - ✅ Use descriptive names
 - ✅ Document group purpose in description
 - ✅ Review group membership regularly
 
 **Don't:**
+
 - ❌ Create too many overlapping groups
 - ❌ Use vague names like "Group 1"
 - ❌ Grant blanket access to all models
@@ -415,12 +452,14 @@ GPT-4 assigned to both, Code Assistant only to Engineering.
 ### Role Assignment
 
 **Do:**
+
 - ✅ Use least privilege principle
 - ✅ Limit Owner role (1-2 people)
 - ✅ Make team leads Admins
 - ✅ Default new users to Guest, upgrade as needed
 
 **Don't:**
+
 - ❌ Make everyone an Admin
 - ❌ Use Guest for active team members
 - ❌ Change roles without documentation
@@ -428,12 +467,14 @@ GPT-4 assigned to both, Code Assistant only to Engineering.
 ### Model Access
 
 **Do:**
+
 - ✅ Start restrictive, expand as needed
 - ✅ Test with small groups first
 - ✅ Monitor usage patterns
 - ✅ Collect feedback on access needs
 
 **Don't:**
+
 - ❌ Give everyone access to everything
 - ❌ Create models without assigning to groups
 - ❌ Forget to remove access when users leave
@@ -445,11 +486,13 @@ GPT-4 assigned to both, Code Assistant only to Engineering.
 ### User Can't See Any Models
 
 **Causes:**
+
 1. User not in any groups
 2. Groups don't have models assigned
 3. Models are disabled
 
 **Debug:**
+
 ```
 1. Check user's groups: Admin → Users → [User] → Groups tab
 2. Check groups have models: Admin → Groups → [Group] → Models tab
@@ -459,10 +502,12 @@ GPT-4 assigned to both, Code Assistant only to Engineering.
 ### User Sees Wrong Models
 
 **Causes:**
+
 1. User in wrong groups
 2. Models assigned to wrong groups
 
 **Debug:**
+
 ```
 1. Check which groups user is in
 2. Check which models are assigned to those groups
@@ -472,10 +517,12 @@ GPT-4 assigned to both, Code Assistant only to Engineering.
 ### Can't Remove User from Group
 
 **Causes:**
+
 1. Insufficient permissions (need Admin+)
 2. Trying to remove yourself as Owner
 
 **Fix:**
+
 - Check your role
 - Have another Admin remove you if needed
 

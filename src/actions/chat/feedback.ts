@@ -1,6 +1,6 @@
 'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/lib/auth/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { Message } from '@/lib/supabase/types';
@@ -37,7 +37,9 @@ async function resolveMessageId(
   }
 
   if (messagesByAiSdkId && messagesByAiSdkId.length > 0) {
-    console.log(`✅ Resolved AI SDK ID "${messageId}" to database UUID "${messagesByAiSdkId[0].id}"`);
+    console.log(
+      `✅ Resolved AI SDK ID "${messageId}" to database UUID "${messagesByAiSdkId[0].id}"`
+    );
     return messagesByAiSdkId[0].id;
   }
 
@@ -68,11 +70,12 @@ async function resolveMessageId(
     .order('created_at', { ascending: true });
 
   if (!allMessagesError && allMessages) {
-    console.log(`🔍 [Debug] All messages in conversation ${conversationId}:`,
+    console.log(
+      `🔍 [Debug] All messages in conversation ${conversationId}:`,
       allMessages.map((m: Message) => ({
         id: m.id,
         ai_sdk_id: m.ai_sdk_id,
-        role: m.role
+        role: m.role,
       }))
     );
 
@@ -109,7 +112,9 @@ export async function submitMessageFeedback(
     // Fallback: If ID resolution fails, try to find the most recent assistant message
     // This handles cases where the AI SDK generates different IDs on the frontend
     if (!resolvedMessageId) {
-      console.warn(`⚠️ Could not resolve message ID "${messageId}", trying fallback: most recent assistant message`);
+      console.warn(
+        `⚠️ Could not resolve message ID "${messageId}", trying fallback: most recent assistant message`
+      );
 
       const { data: recentMessages, error: recentError } = await supabase
         .from('messages')
@@ -293,13 +298,16 @@ export async function getConversationsFeedbackSummary(conversationIds: string[])
     }
 
     // Aggregate in JS since PostgREST doesn't support GROUP BY directly
-    const summaryMap = new Map<string, {
-      conversationId: string;
-      totalCount: number;
-      positiveCount: number;
-      negativeCount: number;
-      commentCount: number;
-    }>();
+    const summaryMap = new Map<
+      string,
+      {
+        conversationId: string;
+        totalCount: number;
+        positiveCount: number;
+        negativeCount: number;
+        commentCount: number;
+      }
+    >();
 
     for (const feedback of feedbackData || []) {
       const existing = summaryMap.get(feedback.conversation_id) || {

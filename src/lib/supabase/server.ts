@@ -1,108 +1,90 @@
 /**
- * Supabase Server Client with Clerk Authentication
+ * Supabase Server Client with Supabase Auth
  *
  * This client is used in server-side code (Server Components, Server Actions, API Routes).
- * It creates a Supabase client that uses Clerk session tokens for RLS.
+ * It creates a Supabase client that uses Supabase Auth sessions with @supabase/ssr.
  *
- * ARCHITECTURE FOR SCALE:
- * 1. Middleware gets the Supabase token ONCE per request and passes it via header
- * 2. Server components/actions read from header first (no Clerk API call)
- * 3. Falls back to Clerk API only if header is missing
- * 4. React's cache() memoizes within the same request for additional safety
+ * ARCHITECTURE:
+ * 1. Uses @supabase/ssr for proper SSR session management
+ * 2. Automatically handles cookies for session persistence
+ * 3. RLS policies use auth.uid() to identify the authenticated user
+ * 4. Session is automatically validated on each request
  */
 
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { auth } from '@clerk/nextjs/server'
-import { headers } from 'next/headers'
-import { cache } from 'react'
-import type { Database } from './types'
-import { SUPABASE_TOKEN_HEADER } from '@/middleware'
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { cache } from 'react';
+import type { Database } from './types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
- * Internal: Get the Supabase token, preferring the middleware-injected header.
- * This avoids hitting Clerk's API on every server action.
- */
-async function getSupabaseToken(): Promise<string | null> {
-  // First, try to read from middleware-injected header (no Clerk API call)
-  try {
-    const headersList = await headers()
-    const tokenFromHeader = headersList.get(SUPABASE_TOKEN_HEADER)
-    if (tokenFromHeader) {
-      return tokenFromHeader
-    }
-  } catch {
-    // headers() not available (e.g., during build) - fall through to Clerk
-  }
-
-  // Fallback: get token from Clerk (makes API call)
-  // Use Supabase JWT template for RLS policies using auth.jwt()->>'sub'
-  try {
-    const { getToken } = await auth()
-    return await getToken({ template: 'supabase' })
-  } catch {
-    return null
-  }
-}
-
-/**
- * Internal: Memoized Supabase client creation.
- * React's cache() ensures this only runs once per server request,
- * even when called from multiple server actions/components.
+ * Internal: Memoized Supabase client creation with SSR support.
+ * React's cache() ensures this only runs once per server request.
  */
 const getSupabaseClientCached = cache(async (): Promise<SupabaseClient<Database>> => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const cookieStore = await cookies();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
       'Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
-    )
+    );
   }
 
-  // Get token from middleware header or Clerk fallback
-  const cachedToken = await getSupabaseToken()
-
-  // Create client with proper authorization header
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
-    global: {
-      headers: cachedToken
-        ? {
-          Authorization: `Bearer ${cachedToken}`,
+  return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+        } catch {
+          // Ignore - called from Server Component
         }
-        : {},
+      },
     },
-    auth: {
-      persistSession: false,
-    },
-  })
-})
+  });
+});
 
 /**
- * Create a Supabase client for server-side use with Clerk authentication.
- * This enables Row Level Security (RLS) policies based on the Clerk user ID.
+ * Create a Supabase client for server-side use with Supabase Auth.
+ * This uses @supabase/ssr for proper SSR session management.
  *
- * PERFORMANCE: This is memoized per-request using React's cache().
- * Multiple calls within the same request reuse the same client and token,
- * preventing Clerk rate limit issues.
+ * RLS policies automatically enforce data access based on auth.uid().
  *
  * @example
- * // In a Server Component
- * const supabase = await createSupabaseServerClient()
- * const { data } = await supabase.from('profiles').select()
+ * // In a Server Component or Server Action
+ * import { createSupabaseServerClient } from '@/lib/supabase/server'
  *
- * @example
- * // In a Server Action
  * const supabase = await createSupabaseServerClient()
- * await supabase.from('conversations').insert({ ... })
+ * const { data } = await supabase
+ *   .from('conversations')
+ *   .select()
+ *   // RLS automatically filters by authenticated user
  */
 export async function createSupabaseServerClient(): Promise<SupabaseClient<Database>> {
-  return getSupabaseClientCached()
+  return getSupabaseClientCached();
 }
 
 /**
- * Create a Supabase client for read-only server operations with Clerk authentication.
- * Use this when you need RLS but don't need to modify data.
+ * Create a Supabase client for read-only server operations.
+ * Use this when you need to read data but don't need to modify it.
  */
 export async function createSupabaseServerClientReadOnly(): Promise<SupabaseClient<Database>> {
-  return createSupabaseServerClient()
+  return createSupabaseServerClient();
+}
+
+/**
+ * Get the current user ID from the Supabase session.
+ *
+ * @returns User ID or null if not authenticated
+ */
+export async function getCurrentUserId(): Promise<string | null> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user?.id ?? null;
 }

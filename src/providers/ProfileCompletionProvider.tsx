@@ -1,31 +1,31 @@
-"use client";
+'use client';
 
-import React, { useEffect, useRef, useState } from "react";
-import { useUser } from "@clerk/nextjs";
-import { usePathname, useRouter } from "next/navigation";
-import { getProfile } from "@/actions/auth/profile";
-import { createLogger } from "@/lib/infrastructure/logger";
-import { EXCLUDED_PATHS } from "@/constants/routes";
+import React, { useEffect, useRef, useState } from 'react';
+import { useUser } from '@/hooks/auth/use-user';
+import { usePathname, useRouter } from 'next/navigation';
+import { getProfile } from '@/actions/auth/profile';
+import { createLogger } from '@/lib/infrastructure/logger';
+import { EXCLUDED_PATHS } from '@/constants/routes';
 
-const logger = createLogger("ProfileCompletionProvider");
+const logger = createLogger('ProfileCompletionProvider');
 
 interface ProfileCompletionProviderProps {
   children: React.ReactNode;
 }
 
 export function ProfileCompletionProvider({ children }: ProfileCompletionProviderProps) {
-  const { user, isLoaded } = useUser();
+  const { user, isUserLoaded: isLoaded } = useUser();
   const router = useRouter();
   const pathname = usePathname();
   const [isChecking, setIsChecking] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
   const lastCheckedUserId = useRef<string | null>(null);
-  const primaryEmail = user?.emailAddresses?.[0]?.emailAddress;
+  const primaryEmail = user?.email;
 
   useEffect(() => {
     const checkProfile = async () => {
       // Skip check if not loaded or no user
-      if (!isLoaded || !user?.id) {
+      if (!isLoaded || !user) {
         setIsChecking(false);
         return;
       }
@@ -47,32 +47,32 @@ export function ProfileCompletionProvider({ children }: ProfileCompletionProvide
       lastCheckedUserId.current = user.id;
 
       try {
-        logger.info("Checking profile existence for user", { userId: user.id });
+        logger.info('Checking profile existence for user', { userId: user.id });
         const result = await getProfile(user.id);
 
         if (!result.success || !result.data) {
-          logger.warn("Profile not found for authenticated user", {
+          logger.warn('Profile not found for authenticated user', {
             userId: user.id,
-            email: user.emailAddresses[0]?.emailAddress
+            email: user.email,
           });
 
           // Redirect to onboarding
-          router.push("/onboarding");
+          router.push('/onboarding');
           setIsChecking(false);
           return;
         }
 
         // Check if profile is complete
         if (!result.data.signup_complete) {
-          logger.info("Profile exists but signup not complete", { userId: user.id });
-          router.push("/onboarding");
+          logger.info('Profile exists but signup not complete', { userId: user.id });
+          router.push('/onboarding');
           setIsChecking(false);
           return;
         }
 
         setHasProfile(true);
       } catch (error) {
-        logger.error("Error checking profile", { error, userId: user.id });
+        logger.error('Error checking profile', { error, userId: user.id });
         // In case of error, allow access but log it
         setHasProfile(true);
       } finally {
@@ -81,14 +81,17 @@ export function ProfileCompletionProvider({ children }: ProfileCompletionProvide
     };
 
     checkProfile();
-  }, [isLoaded, user?.id, user?.emailAddresses, pathname, router, primaryEmail, hasProfile]);
+  }, [isLoaded, user?.id, user?.email, pathname, router, primaryEmail, hasProfile]);
 
   // Show loading state while checking
-  if (isChecking || (isLoaded && user && !hasProfile && !EXCLUDED_PATHS.some(path => pathname.startsWith(path)))) {
+  if (
+    isChecking ||
+    (isLoaded && user && !hasProfile && !EXCLUDED_PATHS.some(path => pathname.startsWith(path)))
+  ) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="space-y-4 text-center">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
           <p className="text-muted-foreground">Verifying your profile...</p>
         </div>
       </div>

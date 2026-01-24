@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/lib/auth/server';
 import { addMessage } from '@/actions/chat/conversations';
 import { z } from 'zod';
-import { verifyJWT } from '@/lib/auth/jwt-verify';
 
 const messageSchema = z.object({
   id: z.string().uuid(),
@@ -14,23 +13,11 @@ const messageSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    // Try to get userId from Clerk auth (for same-domain requests)
-    const authResult = await auth();
-    let userId = authResult.userId;
-
-    // If no userId from Clerk auth, try JWT verification (for external clients like React Native)
-    if (!userId) {
-      const authHeader = req.headers.get('authorization');
-      if (authHeader) {
-        userId = await verifyJWT(authHeader);
-      }
-    }
+    // Get userId from Better-Auth
+    const { userId } = await auth();
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await req.json();
@@ -45,7 +32,7 @@ export async function POST(req: NextRequest) {
       role: validated.role ?? null,
       metadata: null,
       parts: null,
-      ai_sdk_id: null
+      ai_sdk_id: null,
     };
 
     const result = await addMessage(messageData);
@@ -60,9 +47,6 @@ export async function POST(req: NextRequest) {
     }
 
     console.error('Error adding message:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

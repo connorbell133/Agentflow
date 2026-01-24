@@ -1,38 +1,38 @@
-import '@testing-library/jest-dom'
+import '@testing-library/jest-dom';
 
 // Polyfill Web APIs for Node.js test environment
 if (!global.Request) {
   global.Request = class Request {
     constructor(input, init) {
-      const url = typeof input === 'string' ? input : input.url
+      const url = typeof input === 'string' ? input : input.url;
       Object.defineProperty(this, 'url', {
         value: url,
         writable: false,
         enumerable: true,
-        configurable: true
-      })
+        configurable: true,
+      });
       Object.defineProperty(this, 'method', {
         value: init?.method || 'GET',
         writable: false,
         enumerable: true,
-        configurable: true
-      })
-      this.headers = new Map(Object.entries(init?.headers || {}))
+        configurable: true,
+      });
+      this.headers = new Map(Object.entries(init?.headers || {}));
     }
-  }
+  };
 }
 
 if (!global.Response) {
   global.Response = class Response {
     constructor(body, init) {
-      this.body = body
-      this.status = init?.status || 200
-      this.statusText = init?.statusText || 'OK'
-      this.headers = new Map(Object.entries(init?.headers || {}))
+      this.body = body;
+      this.status = init?.status || 200;
+      this.statusText = init?.statusText || 'OK';
+      this.headers = new Map(Object.entries(init?.headers || {}));
     }
 
     async json() {
-      return typeof this.body === 'string' ? JSON.parse(this.body) : this.body
+      return typeof this.body === 'string' ? JSON.parse(this.body) : this.body;
     }
 
     static json(body, init) {
@@ -40,11 +40,11 @@ if (!global.Response) {
         ...init,
         headers: {
           'content-type': 'application/json',
-          ...init?.headers
-        }
-      })
+          ...init?.headers,
+        },
+      });
     }
-  }
+  };
 }
 
 // Mock Supabase server client
@@ -77,7 +77,7 @@ jest.mock('@/lib/supabase/server', () => ({
       single: jest.fn().mockResolvedValue({ data: null, error: null }),
     })),
   })),
-}))
+}));
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
@@ -90,68 +90,148 @@ jest.mock('next/navigation', () => ({
       pathname: '/',
       query: {},
       asPath: '/',
-    }
+    };
   },
   useSearchParams() {
     return {
       get: jest.fn(),
-    }
+    };
   },
   usePathname() {
-    return '/'
+    return '/';
   },
-}))
+}));
 
-// Mock Clerk authentication
-jest.mock('@clerk/nextjs', () => ({
-  useUser: jest.fn(() => ({
-    isLoaded: true,
-    isSignedIn: true,
-    user: {
-      id: 'test-user-id',
-      emailAddress: 'test@example.com',
+// Mock Supabase Auth Client
+jest.mock('@/lib/auth/supabase-client', () => ({
+  createClient: jest.fn(() => ({
+    auth: {
+      getUser: jest.fn().mockResolvedValue({
+        data: {
+          user: {
+            id: 'test-user-id',
+            email: 'test@example.com',
+            user_metadata: {
+              org_id: 'test-org-id',
+              role: 'user',
+            },
+          },
+        },
+        error: null,
+      }),
+      getSession: jest.fn().mockResolvedValue({
+        data: {
+          session: {
+            access_token: 'test-token',
+            user: {
+              id: 'test-user-id',
+              email: 'test@example.com',
+            },
+          },
+        },
+        error: null,
+      }),
+      signInWithPassword: jest.fn().mockResolvedValue({
+        data: {
+          user: {
+            id: 'test-user-id',
+            email: 'test@example.com',
+          },
+          session: {
+            access_token: 'test-token',
+          },
+        },
+        error: null,
+      }),
+      signUp: jest.fn().mockResolvedValue({
+        data: {
+          user: {
+            id: 'test-user-id',
+            email: 'test@example.com',
+          },
+          session: null,
+        },
+        error: null,
+      }),
+      signOut: jest.fn().mockResolvedValue({
+        error: null,
+      }),
+      onAuthStateChange: jest.fn(() => ({
+        data: {
+          subscription: {
+            unsubscribe: jest.fn(),
+          },
+        },
+      })),
     },
+    from: jest.fn(() => ({
+      select: jest.fn().mockReturnThis(),
+      insert: jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
+      delete: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    })),
   })),
-  useAuth: jest.fn(() => ({
-    isLoaded: true,
-    isSignedIn: true,
-    userId: 'test-user-id',
-  })),
-  useOrganization: jest.fn(() => ({
-    isLoaded: true,
-    organization: {
-      id: 'test-org-id',
-      name: 'Test Organization',
-    },
-  })),
-  SignIn: jest.fn(() => null),
-  SignUp: jest.fn(() => null),
-  SignedIn: jest.fn(({ children }) => children),
-  SignedOut: jest.fn(() => null),
-  UserButton: jest.fn(() => null),
-}))
+}));
+
+// Mock Supabase Auth Server
+jest.mock('@/lib/auth/server', () => ({
+  auth: jest.fn(() =>
+    Promise.resolve({
+      userId: 'test-user-id',
+      user: {
+        id: 'test-user-id',
+        email: 'test@example.com',
+        user_metadata: {
+          org_id: 'test-org-id',
+          role: 'user',
+        },
+      },
+      org_id: 'test-org-id',
+      role: 'user',
+    })
+  ),
+  requireAuth: jest.fn(() =>
+    Promise.resolve({
+      userId: 'test-user-id',
+      user: {
+        id: 'test-user-id',
+        email: 'test@example.com',
+        user_metadata: {
+          org_id: 'test-org-id',
+          role: 'user',
+        },
+      },
+      org_id: 'test-org-id',
+      role: 'user',
+    })
+  ),
+}));
 
 // Mock environment variables
-process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = 'test-clerk-key'
-process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co'
-process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key'
+process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
+// secretlint-disable-next-line
+process.env.DATABASE_URL = 'postgresql://example_user:example_pass@example.com:5432/example_db';
+process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
 
 // Suppress console errors in tests unless explicitly testing error handling
-const originalError = console.error
+const originalError = console.error;
 beforeAll(() => {
-  console.error = jest.fn()
-})
+  console.error = jest.fn();
+});
 
 afterAll(() => {
-  console.error = originalError
-})
+  console.error = originalError;
+});
 
 // Global test utilities
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
   disconnect: jest.fn(),
-}))
+}));
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -166,4 +246,4 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })),
-})
+});

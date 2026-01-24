@@ -74,13 +74,6 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "conversations_user_fkey"
-            columns: ["user"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       group_map: {
@@ -111,13 +104,6 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "group_map_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -253,13 +239,6 @@ export type Database = {
             referencedRelation: "models"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "message_feedback_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       messages: {
@@ -299,6 +278,56 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      model_config_presets: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          event_mappings: Json
+          field_metadata: Json | null
+          id: string
+          is_system: boolean
+          name: string
+          org_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_mappings: Json
+          field_metadata?: Json | null
+          id?: string
+          is_system?: boolean
+          name: string
+          org_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_mappings?: Json
+          field_metadata?: Json | null
+          id?: string
+          is_system?: boolean
+          name?: string
+          org_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_config_presets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -422,6 +451,9 @@ export type Database = {
           schema: string | null
           stream_config: Json | null
           suggestion_prompts: string[] | null
+          template_id: string | null
+          template_mode: string | null
+          template_modified_fields: Json | null
         }
         Insert: {
           body_config?: Json | null
@@ -440,6 +472,9 @@ export type Database = {
           schema?: string | null
           stream_config?: Json | null
           suggestion_prompts?: string[] | null
+          template_id?: string | null
+          template_mode?: string | null
+          template_modified_fields?: Json | null
         }
         Update: {
           body_config?: Json | null
@@ -458,26 +493,40 @@ export type Database = {
           schema?: string | null
           stream_config?: Json | null
           suggestion_prompts?: string[] | null
+          template_id?: string | null
+          template_mode?: string | null
+          template_modified_fields?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "models_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "model_config_presets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       org_map: {
         Row: {
           created_at: string
           id: string
           org_id: string
+          role: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           org_id: string
+          role?: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           org_id?: string
+          role?: string
           user_id?: string
         }
         Relationships: [
@@ -486,13 +535,6 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "org_map_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -519,15 +561,7 @@ export type Database = {
           owner?: string | null
           status?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "organizations_owner_fkey"
-            columns: ["owner"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       product_tiers: {
         Row: {

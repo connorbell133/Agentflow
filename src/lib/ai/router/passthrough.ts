@@ -2,11 +2,11 @@
  * AI SDK Stream Pass-through Handler
  *
  * For external endpoints built with AI SDK that return AI SDK-compatible streams.
- * 
+ *
  * AI SDK has two stream formats:
  * - Data streams: Lower-level format with events like "tool-input-start", "tool-output-available"
  * - UI message streams: Higher-level format with events like "tool-invocation", "tool-result"
- * 
+ *
  * The useChat hook expects UI message streams, so this handler:
  * - Converts data streams to UI message streams
  * - Passes through UI message streams unchanged
@@ -16,7 +16,7 @@ import { type UIMessage } from 'ai';
 import { buildBodyJson } from '@/lib/api/model-utils';
 import type { RoutableModel, SimpleMessage } from './types';
 import { convertDataStreamToUIStream } from './stream-converter';
-import { extractTextFromMessage, ensureParts } from '@/utils/formatters/message-parts';
+import { extractTextFromMessage, ensureParts } from '@/utils/message-parts';
 
 /**
  * Pass through an AI SDK stream from an external endpoint
@@ -37,19 +37,26 @@ export async function passThroughAISDKStream(
 
   // Convert UIMessages to v6 format for external endpoint
   // AI SDK v6 expects messages with `parts` array, not `content` string
-  const v6Messages = messages.map((m) => ({
+  const v6Messages = messages.map(m => ({
     id: m.id,
     role: m.role,
     parts: ensureParts(m),
     ...('createdAt' in m && m.createdAt ? { createdAt: m.createdAt as Date } : {}),
   }));
 
-  console.log('🔀 [AI SDK Passthrough] Converted messages to v6 format:', JSON.stringify(v6Messages.map(m => ({
-    id: m.id,
-    role: m.role,
-    partsCount: m.parts?.length || 0,
-    parts: m.parts
-  })), null, 2));
+  console.log(
+    '🔀 [AI SDK Passthrough] Converted messages to v6 format:',
+    JSON.stringify(
+      v6Messages.map(m => ({
+        id: m.id,
+        role: m.role,
+        partsCount: m.parts?.length || 0,
+        parts: m.parts,
+      })),
+      null,
+      2
+    )
+  );
 
   // Build request body using template if configured
   let body: unknown;
@@ -57,7 +64,7 @@ export async function passThroughAISDKStream(
     console.log('⚙️ [AI SDK Passthrough] Using body_config template');
     // Extract text content for template variables (backwards compatibility)
     const lastMessageText = extractTextFromMessage(v6Messages[v6Messages.length - 1] || {});
-    
+
     body = await buildBodyJson(model.body_config, {
       messages: v6Messages,
       content: lastMessageText, // For backwards compatibility with templates
@@ -69,10 +76,17 @@ export async function passThroughAISDKStream(
   }
 
   console.log('📤 [AI SDK Passthrough] Request body:', JSON.stringify(body, null, 2));
-  console.log('🔑 [AI SDK Passthrough] Headers:', JSON.stringify({
-    'Content-Type': 'application/json',
-    ...model.headers,
-  }, null, 2));
+  console.log(
+    '🔑 [AI SDK Passthrough] Headers:',
+    JSON.stringify(
+      {
+        'Content-Type': 'application/json',
+        ...model.headers,
+      },
+      null,
+      2
+    )
+  );
 
   // Forward request to external AI SDK agent
   console.log('🚀 [AI SDK Passthrough] Sending request to:', model.endpoint);
@@ -87,11 +101,10 @@ export async function passThroughAISDKStream(
   });
 
   console.log('✅ [AI SDK Passthrough] Response status:', response.status);
-  console.log('📋 [AI SDK Passthrough] Response headers:', JSON.stringify(
-    Object.fromEntries(response.headers.entries()),
-    null,
-    2
-  ));
+  console.log(
+    '📋 [AI SDK Passthrough] Response headers:',
+    JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -102,7 +115,7 @@ export async function passThroughAISDKStream(
   // Check what type of AI SDK stream this is
   const hasDataStream = response.headers.get('x-vercel-ai-data-stream') === 'v1';
   const hasUIStream = response.headers.get('x-vercel-ai-ui-message-stream') === 'v1';
-  
+
   console.log('📋 [AI SDK Passthrough] Stream type detection:', {
     hasDataStream,
     hasUIStream,
@@ -114,13 +127,15 @@ export async function passThroughAISDKStream(
   }
 
   // According to AI SDK docs, toUIMessageStreamResponse() returns UI message stream format
-  // The useChat hook processes these events (tool-input-start, tool-output-available) 
+  // The useChat hook processes these events (tool-input-start, tool-output-available)
   // and creates message parts automatically. We should pass through when UI stream header is set.
-  
+
   if (hasUIStream && !hasDataStream) {
     // It's explicitly a UI message stream - pass through directly
     // The useChat hook will process tool-input-start, tool-output-available events
-    console.log('✨ [AI SDK Passthrough] Passing through UI message stream - useChat will handle tool events');
+    console.log(
+      '✨ [AI SDK Passthrough] Passing through UI message stream - useChat will handle tool events'
+    );
     return new Response(response.body, {
       status: response.status,
       headers: {

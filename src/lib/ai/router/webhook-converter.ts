@@ -5,14 +5,10 @@
  * to AI SDK 6 UI message stream format.
  */
 
-import {
-  createUIMessageStream,
-  createUIMessageStreamResponse,
-  type UIMessage,
-} from 'ai';
+import { createUIMessageStream, createUIMessageStreamResponse, type UIMessage } from 'ai';
 import { buildBodyJson, getByPath } from '@/lib/api/model-utils';
 import type { RoutableModel, SimpleMessage, WebhookStreamConfig } from './types';
-import { extractTextFromMessage } from '@/utils/formatters/message-parts';
+import { extractTextFromMessage } from '@/utils/message-parts';
 
 /**
  * Convert a JSON webhook response to UI message stream
@@ -27,7 +23,7 @@ export async function convertWebhookToUIStream(
 ): Promise<Response> {
   // Convert UIMessages to simple format for external webhook endpoints
   // External APIs expect content strings, not parts arrays
-  const simpleMessages: SimpleMessage[] = messages.map((m) => ({
+  const simpleMessages: SimpleMessage[] = messages.map(m => ({
     role: m.role,
     content: extractTextFromMessage(m),
   }));
@@ -86,7 +82,7 @@ export async function convertWebhookToUIStream(
           const word = words[i];
           const deltaText = i < words.length - 1 ? word + ' ' : word;
           writer.write({ type: 'text-delta', id: messageId, delta: deltaText });
-          await new Promise((r) => setTimeout(r, simulateDelay));
+          await new Promise(r => setTimeout(r, simulateDelay));
         }
       } else {
         // Emit full text at once
@@ -96,7 +92,7 @@ export async function convertWebhookToUIStream(
       writer.write({ type: 'text-end', id: messageId });
       writer.write({ type: 'finish', finishReason: 'stop' });
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Webhook stream error:', error);
       return error instanceof Error ? error.message : 'Unknown error';
     },

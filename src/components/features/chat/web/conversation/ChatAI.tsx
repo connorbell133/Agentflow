@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { TextBoxAI } from '@/components/features/chat/web/TextBox/TextBoxAI';
-import { cn } from '@/utils/cn';
+import { cn } from '@/utils/shared/cn';
 import ChatBoxAI from '@/components/features/chat/web/ChatBox/ChatBoxAI';
 import SideBarComponent from '@/components/layout/sidebars/SideBar/SideBar';
 import { useAIChat } from '@/hooks/chat/use-ai-chat';
@@ -17,8 +17,8 @@ import { useChatData } from '@/hooks/chat/use-chat-data';
 import { useUser } from '@/hooks/auth/use-user';
 import { getUserOrgStatus } from '@/actions/organization/user-org-status';
 import InviteBadge from '@/components/features/chat/web/invite/InviteBadge';
-import LoadingSpinner from '@/components/shared/loading/LoadingSpinner';
-import { DarkModeToggle } from '@/components/shared/theme/DarkModeToggle';
+import LoadingSpinner from '@/components/common/loading/LoadingSpinner';
+import { DarkModeToggle } from '@/components/common/theme/DarkModeToggle';
 import { useRouter } from 'next/navigation';
 import { IconInnerShadowTop } from '@tabler/icons-react';
 import { createLogger } from '@/lib/infrastructure/logger';
@@ -73,7 +73,7 @@ const ChatAIContent = () => {
   } = useAIChat({
     model: selectedModel ?? undefined,
     org_id: selectedModel?.org_id,
-    onConversationCreated: (newConvId) => {
+    onConversationCreated: newConvId => {
       logger.info('Conversation created', { conversationId: newConvId });
       // Add to conversations list
       if (selectedModel) {
@@ -87,7 +87,7 @@ const ChatAIContent = () => {
         });
       }
     },
-    onError: (error) => {
+    onError: error => {
       logger.error('Chat error', { error });
       showToast(error.message, 'error');
     },
@@ -185,7 +185,7 @@ const ChatAIContent = () => {
   // Loading state
   if (!isUserLoaded && !user) {
     return (
-      <div className="w-screen h-screen bg-background flex items-center justify-center">
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
         <LoadingSpinner size="xl" className="text-foreground" />
       </div>
     );
@@ -195,7 +195,7 @@ const ChatAIContent = () => {
   if (isUserLoaded && !user) {
     router.push('/sign-in');
     return (
-      <div className="w-screen h-screen bg-background flex items-center justify-center">
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
         <LoadingSpinner size="xl" className="text-foreground" />
       </div>
     );
@@ -212,20 +212,20 @@ const ChatAIContent = () => {
 
   // Get current conversation for sidebar
   const currentConversation: Conversation | null = conversationId
-    ? conversations.find((c) => c.id === conversationId) ?? {
+    ? (conversations.find(c => c.id === conversationId) ?? {
         id: conversationId,
         user: user?.id ?? '',
         created_at: new Date().toISOString(),
         model: selectedModel?.id ?? '',
         org_id: selectedModel?.org_id ?? '',
         title: 'New Chat',
-      }
+      })
     : null;
 
   return (
     <div
       className={cn(
-        'flex flex-col md:flex-row flex-1 overflow-hidden',
+        'flex flex-1 flex-col overflow-hidden md:flex-row',
         'h-screen w-screen bg-background text-foreground'
       )}
     >
@@ -242,9 +242,9 @@ const ChatAIContent = () => {
         models={models}
       />
 
-      <section className="h-screen max-h-screen flex-1 flex flex-col overflow-hidden bg-background relative">
+      <section className="relative flex h-screen max-h-screen flex-1 flex-col overflow-hidden bg-background">
         {/* Top Menu */}
-        <div className="flex w-full p-4 z-10 justify-end">
+        <div className="z-10 flex w-full justify-end p-4">
           <div className="flex items-center space-x-4">
             {conversationId && (
               <Button
@@ -264,12 +264,12 @@ const ChatAIContent = () => {
 
         {/* No Models State */}
         {hasNoModels && !isCheckingOrg && (
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div className="max-w-md w-full space-y-8 text-center">
+          <div className="flex flex-1 items-center justify-center p-8">
+            <div className="w-full max-w-md space-y-8 text-center">
               <div className="flex justify-center">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-xl"></div>
-                  <div className="relative bg-muted/30 backdrop-blur-sm p-8 rounded-full border border-border">
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 blur-xl"></div>
+                  <div className="bg-muted/30 relative rounded-full border border-border p-8 backdrop-blur-sm">
                     <svg
                       width="64"
                       height="64"
@@ -302,21 +302,21 @@ const ChatAIContent = () => {
                 <h2 className="text-2xl font-semibold text-foreground">No AI Models Available</h2>
                 {hasOrganization ? (
                   <>
-                    <p className="text-muted-foreground text-base leading-relaxed">
+                    <p className="text-base leading-relaxed text-muted-foreground">
                       You don&apos;t have any AI models configured yet. Add models to your
                       organization to get started.
                     </p>
                     <Button
                       onClick={() => router.push('/admin')}
                       size="lg"
-                      className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/20"
+                      className="w-full bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-blue-700"
                     >
                       Add Your Models
                     </Button>
                   </>
                 ) : (
                   <>
-                    <p className="text-muted-foreground text-base leading-relaxed">
+                    <p className="text-base leading-relaxed text-muted-foreground">
                       You don&apos;t have access to any AI models yet. To get started, you can
                       either wait for an invite to join an existing organization or create your own.
                     </p>
@@ -324,7 +324,7 @@ const ChatAIContent = () => {
                       <Button
                         onClick={() => router.push('/admin')}
                         size="lg"
-                        className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/20"
+                        className="w-full bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-blue-700"
                       >
                         Create Your Organization
                       </Button>
@@ -336,7 +336,7 @@ const ChatAIContent = () => {
                           <span className="bg-background px-2 text-muted-foreground">or</span>
                         </div>
                       </div>
-                      <div className="text-sm text-muted-foreground space-y-2">
+                      <div className="space-y-2 text-sm text-muted-foreground">
                         <p>Waiting for an invitation?</p>
                         <p className="text-xs">
                           Ask your organization admin to invite you, and you&apos;ll receive access
@@ -353,9 +353,9 @@ const ChatAIContent = () => {
 
         {/* Initial State - Logo + TextBox */}
         {!hasNoModels && !hasMessages && (
-          <div className="w-full mx-auto max-w-6xl px-2 xl:px-20 translate-y-6 py-24 text-center">
-            <div className="w-full flex flex-col justify-center items-center">
-              <div className="flex justify-center items-center w-full h-20 bg-background gap-3">
+          <div className="xl:px-20 mx-auto w-full max-w-6xl translate-y-6 px-2 py-24 text-center">
+            <div className="flex w-full flex-col items-center justify-center">
+              <div className="flex h-20 w-full items-center justify-center gap-3 bg-background">
                 <IconInnerShadowTop className="!size-12" />
                 <h1
                   className="line-clamp-1"
@@ -371,7 +371,7 @@ const ChatAIContent = () => {
                 </h1>
               </div>
 
-              <div className="w-full p-5 max-w-3xl">
+              <div className="w-full max-w-3xl p-5">
                 <TextBoxAI
                   placeholders={[
                     'Ask me anything...',
@@ -391,23 +391,24 @@ const ChatAIContent = () => {
                 />
 
                 {/* Suggestion Prompts */}
-                {selectedModel?.suggestion_prompts && selectedModel.suggestion_prompts.length > 0 && (
-                  <div className="mb-4">
-                    <div className="flex flex-wrap gap-2 pt-4">
-                      {selectedModel.suggestion_prompts.map((prompt, index) => (
-                        <button
-                          key={index}
-                          onClick={() => {
-                            setInput(prompt);
-                          }}
-                          className="px-3 py-2 rounded-lg border border-border hover:border-muted-foreground/30 hover:bg-muted/50 transition-colors text-sm"
-                        >
-                          {prompt}
-                        </button>
-                      ))}
+                {selectedModel?.suggestion_prompts &&
+                  selectedModel.suggestion_prompts.length > 0 && (
+                    <div className="mb-4">
+                      <div className="flex flex-wrap gap-2 pt-4">
+                        {selectedModel.suggestion_prompts.map((prompt, index) => (
+                          <button
+                            key={index}
+                            onClick={() => {
+                              setInput(prompt);
+                            }}
+                            className="hover:border-muted-foreground/30 hover:bg-muted/50 rounded-lg border border-border px-3 py-2 text-sm transition-colors"
+                          >
+                            {prompt}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </div>
           </div>
@@ -415,8 +416,8 @@ const ChatAIContent = () => {
 
         {/* Chat View - Messages + TextBox */}
         {!hasNoModels && hasMessages && (
-          <div className="flex-grow flex flex-col justify-between items-center w-full max-w-[48rem] mx-auto overflow-hidden">
-            <div className="w-full h-[calc(100vh-80px)] overflow-auto max-h-[calc(100vh-160px)] flex flex-col">
+          <div className="mx-auto flex w-full max-w-[48rem] flex-grow flex-col items-center justify-between overflow-hidden">
+            <div className="flex h-[calc(100vh-80px)] max-h-[calc(100vh-160px)] w-full flex-col overflow-auto">
               <ChatBoxAI
                 messages={messages}
                 isLoading={isChatLoading}
@@ -426,7 +427,7 @@ const ChatAIContent = () => {
               />
             </div>
 
-            <div className="w-full py-5 px-5">
+            <div className="w-full px-5 py-5">
               <TextBoxAI
                 placeholders={[
                   'Type your message...',
@@ -454,7 +455,7 @@ const ChatAIContent = () => {
         open={showFeedbackPanel}
         onOpenChange={setShowFeedbackPanel}
         conversationId={conversationId}
-        messages={messages.map((m) => ({
+        messages={messages.map(m => ({
           id: m.id,
           role: m.role,
           ai_sdk_id: m.id,
@@ -463,16 +464,14 @@ const ChatAIContent = () => {
           content:
             m.parts
               ?.filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-              .map((p) => p.text)
+              .map(p => p.text)
               .join('') ?? '',
           conversation_id: conversationId ?? '',
           created_at: new Date().toISOString(),
         }))}
-        getUserProfile={async (userId) => {
+        getUserProfile={async userId => {
           try {
-            const response = await fetch(
-              `/api/user/profile?userId=${encodeURIComponent(userId)}`
-            );
+            const response = await fetch(`/api/user/profile?userId=${encodeURIComponent(userId)}`);
             if (response.ok) {
               const data = await response.json();
               return { email: data.email || userId, fullName: data.fullName || null };

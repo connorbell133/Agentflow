@@ -1,8 +1,8 @@
-import React, { useMemo } from "react";
-import { Label } from "@/components/ui/label";
-import MessageFormatMapper from "@/components/features/admin/management/AddModel/MessageFormatMapper";
-import { WizardState } from "../wizard.types";
-import { safeJsonParse } from "../utils/pathExtractor";
+import React, { useMemo } from 'react';
+import { Label } from '@/components/ui/label';
+import MessageFormatMapper from '@/components/features/admin/management/AddModel/MessageFormatMapper';
+import { WizardState } from '@/types/ui/wizard.types';
+import { safeJsonParse } from '../utils/pathExtractor';
 
 interface FieldMappingStepProps {
   state: WizardState;
@@ -10,22 +10,19 @@ interface FieldMappingStepProps {
   [key: string]: any;
 }
 
-export const FieldMappingStep: React.FC<FieldMappingStepProps> = ({
-  state,
-  updateState
-}) => {
+export const FieldMappingStep: React.FC<FieldMappingStepProps> = ({ state, updateState }) => {
   // Generate the before and after preview based on the mapping configuration
   const { beforeMessages, afterMessages } = useMemo(() => {
     const sampleMessages = [
-      { role: "user", content: "Hello, how can you help me?" },
-      { role: "assistant", content: "I'm here to assist you!" }
+      { role: 'user', content: 'Hello, how can you help me?' },
+      { role: 'assistant', content: "I'm here to assist you!" },
     ];
 
     // Before mapping (original format)
     const before = JSON.stringify(sampleMessages, null, 2);
 
     // After mapping (transformed format)
-    let after = "{}";
+    let after = '{}';
     try {
       const mapped = sampleMessages.map(msg => {
         const result: any = {};
@@ -47,7 +44,7 @@ export const FieldMappingStep: React.FC<FieldMappingStepProps> = ({
 
         // Add any custom fields
         if (state.message_format_config.customFields) {
-          state.message_format_config.customFields.forEach((field) => {
+          state.message_format_config.customFields.forEach(field => {
             if (field.name && field.value !== undefined) {
               result[field.name] = field.value;
             }
@@ -59,28 +56,28 @@ export const FieldMappingStep: React.FC<FieldMappingStepProps> = ({
 
       after = JSON.stringify(mapped, null, 2);
     } catch (error) {
-      console.error("Error generating preview:", error);
+      console.error('Error generating preview:', error);
     }
 
     return { beforeMessages: before, afterMessages: after };
   }, [state.message_format_config]);
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex h-full flex-col">
       <div className="mb-6">
         <p className="text-muted-foreground">
           Configure how messages are transformed when sent to the AI model.
         </p>
       </div>
 
-      <div className="flex-1 grid grid-cols-2 gap-6">
+      <div className="grid flex-1 grid-cols-2 gap-6">
         {/* Left Panel - Field Mapping Configuration */}
         <div className="space-y-4">
           <div>
-            <h4 className="text-base font-medium mb-4">Field Mappings</h4>
+            <h4 className="mb-4 text-base font-medium">Field Mappings</h4>
             <MessageFormatMapper
               config={state.message_format_config}
-              onChange={(config) => updateState({ message_format_config: config })}
+              onChange={config => updateState({ message_format_config: config })}
             />
           </div>
         </div>
@@ -93,7 +90,7 @@ export const FieldMappingStep: React.FC<FieldMappingStepProps> = ({
             {/* Before mapping */}
             <div className="space-y-2">
               <Label>Before Mapping</Label>
-              <pre className="border rounded w-full px-3 py-2 font-mono text-sm bg-muted text-muted-foreground overflow-x-auto whitespace-pre-wrap">
+              <pre className="w-full overflow-x-auto whitespace-pre-wrap rounded border bg-muted px-3 py-2 font-mono text-sm text-muted-foreground">
                 {beforeMessages}
               </pre>
             </div>
@@ -101,7 +98,7 @@ export const FieldMappingStep: React.FC<FieldMappingStepProps> = ({
             {/* After mapping */}
             <div className="space-y-2">
               <Label>After Mapping</Label>
-              <pre className="border rounded w-full px-3 py-2 font-mono text-sm bg-card text-card-foreground overflow-x-auto whitespace-pre-wrap">
+              <pre className="w-full overflow-x-auto whitespace-pre-wrap rounded border bg-card px-3 py-2 font-mono text-sm text-card-foreground">
                 {afterMessages}
               </pre>
             </div>

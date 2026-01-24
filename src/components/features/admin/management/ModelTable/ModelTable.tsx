@@ -1,10 +1,10 @@
-import React, { useState } from "react";
-import { ModelMap, Model, Group } from "@/lib/supabase/types"
-import { createLogger } from "@/lib/infrastructure/logger";
-import GenericTable from "@/components/shared/tables/BaseTable";
-import ModelGroupSelector from "@/components/features/admin/selectors/GroupSelector/modelGroupSelector";
-import EditModelForm from "../AddModel/EditModel";
-const logger = createLogger("ModelGroupSelector.tsx");
+import React, { useState } from 'react';
+import { ModelMap, Model, Group } from '@/lib/supabase/types';
+import { createLogger } from '@/lib/infrastructure/logger';
+import GenericTable from '@/components/common/tables/BaseTable';
+import ModelGroupSelector from '@/components/features/admin/selectors/GroupSelector/modelGroupSelector';
+import EditModelForm from '../AddModel/EditModel';
+const logger = createLogger('ModelGroupSelector.tsx');
 
 interface GroupTableProps {
   models: Model[];
@@ -28,20 +28,20 @@ const ModelTable: React.FC<GroupTableProps> = ({
   };
   const renderRow = (model: Model) => (
     <tr key={model.model_id}>
-      <td className="py-4 px-6">{model.nice_name}</td>
-      <td className="py-4 px-6">{model.description}</td>
-      <td className="py-4 px-6">
+      <td className="px-6 py-4">{model.nice_name}</td>
+      <td className="px-6 py-4">{model.description}</td>
+      <td className="px-6 py-4">
         {(() => {
           const endpoint = (model as any)?.endpoint as string | undefined;
           if (endpoint && endpoint.length > 50) {
-            return endpoint.substring(0, 50) + "...";
+            return endpoint.substring(0, 50) + '...';
           }
-          return endpoint || "";
+          return endpoint || '';
         })()}
       </td>
-      <td className="py-4 px-6">{(model as any)?.method || "POST"}</td>
-      <td className="py-4 px-6">{model.response_path}</td>
-      <td className="py-4 px-6">
+      <td className="px-6 py-4">{(model as any)?.method || 'POST'}</td>
+      <td className="px-6 py-4">{model.response_path}</td>
+      <td className="px-6 py-4">
         <ModelGroupSelector
           groups={groups}
           groupsAssigned={modelGroups}
@@ -50,10 +50,10 @@ const ModelTable: React.FC<GroupTableProps> = ({
           type="model"
         />
       </td>
-      <td className="py-4 px-6">
+      <td className="px-6 py-4">
         <button
           onClick={() => handleEditClick(model)}
-          className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90"
+          className="hover:bg-primary/90 rounded bg-primary px-4 py-2 text-primary-foreground"
         >
           Edit
         </button>
@@ -64,22 +64,14 @@ const ModelTable: React.FC<GroupTableProps> = ({
     <>
       <GenericTable
         data={models}
-        headers={[
-          "Name",
-          "Description",
-          "Endpoint",
-          "Method",
-          "Response Path",
-          "Group",
-          "Actions",
-        ]}
+        headers={['Name', 'Description', 'Endpoint', 'Method', 'Response Path', 'Group', 'Actions']}
         renderRow={renderRow}
-        getId={(model) => model.id}
+        getId={model => model.id}
       />
       {/* Conditionally render the popup if `activeGroup` is set */}
       {activeModel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-4xl mx-4 sm:mx-6 lg:mx-8">
+          <div className="mx-4 w-full max-w-4xl sm:mx-6 lg:mx-8">
             <EditModelForm
               model={activeModel}
               setActiveModel={setActiveModel}

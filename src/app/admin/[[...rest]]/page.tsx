@@ -1,12 +1,12 @@
-import React from "react";
-import { auth } from '@clerk/nextjs/server';
+import React from 'react';
+import { auth } from '@/lib/auth/server';
 import { getUserProfile, getOrgUsers } from '@/actions/auth/users';
-import OrgCreationScreen from "@/components/features/admin/org_management/OrgCreation";
-import { fetchOrg } from "@/actions/organization/organizations";
-import { getUserOrgStatus } from "@/actions/organization/user-org-status";
-import { getGroups, getAllUserGroups } from "@/actions/organization/group";
-import { AdminPageWrapper } from "@/components/features/admin/AdminPageWrapper";
-import { getDashboardData } from "@/actions/admin/getDashboardData";
+import OrgCreationScreen from '@/components/features/admin/org_management/OrgCreation';
+import { fetchOrg } from '@/actions/organization/organizations';
+import { getUserOrgStatus } from '@/actions/organization/user-org-status';
+import { getGroups, getAllUserGroups } from '@/actions/organization/group';
+import { AdminPageWrapper } from '@/components/features/admin/AdminPageWrapper';
+import { getDashboardData } from '@/actions/admin/getDashboardData';
 import { getOrgModels, getAllModelGroups } from '@/actions/chat/models';
 import { getOrgConversations, getOrgUsersLastConversation } from '@/actions/chat/conversations';
 import { getOrgInvites } from '@/actions/organization/invites';
@@ -45,13 +45,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     name: orgStatus.data.organizations[0]?.orgName,
     owner: orgStatus.data.organizations[0]?.isOwner,
     created_at: new Date().toISOString(),
-    status: null
+    status: null,
   };
 
   if (!org || !org.id) {
     return <OrgCreationScreen user={profile} />;
   }
-
 
   // Get current tab
   const currentTab = searchParams.tab || 'overview';
@@ -66,7 +65,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     userGroupsData,
     modelGroupsData,
     invitesData,
-    userActivityData
+    userActivityData,
   ] = await Promise.all([
     getDashboardData(org.id),
     getOrgUsers(org.id, { page: 1, limit: 100 }), // Increased limit to ensure we get all users
@@ -76,7 +75,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     getAllUserGroups(org.id),
     getAllModelGroups(org.id),
     getOrgInvites(org.id),
-    getOrgUsersLastConversation(org.id)
+    getOrgUsersLastConversation(org.id),
   ]);
 
   // Process user activity into a map
@@ -90,7 +89,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const serializedModels = (modelsData || []).map(model => ({
     ...model,
     // Convert any non-serializable fields to plain objects
-    message_format_config: model.message_format_config ? JSON.parse(JSON.stringify(model.message_format_config)) : null
+    message_format_config: model.message_format_config
+      ? JSON.parse(JSON.stringify(model.message_format_config))
+      : null,
   }));
 
   const initialData = {
@@ -102,16 +103,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     userGroups: userGroupsData || [],
     modelGroups: modelGroupsData || [],
     invites: invitesData || [],
-    userActivity
+    userActivity,
   };
 
   // Render admin dashboard
   return (
-    <AdminPageWrapper
-      user={profile}
-      org={org}
-      currentTab={currentTab}
-      initialData={initialData}
-    />
+    <AdminPageWrapper user={profile} org={org} currentTab={currentTab} initialData={initialData} />
   );
 }

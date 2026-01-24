@@ -9,6 +9,7 @@ Complete guide to AgentFlow's organization-based multi-tenancy.
 AgentFlow implements **true multi-tenancy** at the database level, allowing you to serve multiple completely isolated organizations from a single deployment.
 
 **What this means:**
+
 - Each organization has its own users, data, and AI models
 - Complete data isolation enforced at the database layer
 - No shared data between organizations
@@ -43,6 +44,7 @@ Organizations:
 ```
 
 **Each organization is completely isolated:**
+
 - Acme Corp cannot see TechStart's data
 - TechStart cannot access Legal's AI models
 - Legal cannot view Acme's conversations
@@ -75,6 +77,7 @@ CREATE POLICY "Users can only see their organization's conversations"
 ```
 
 **Benefits:**
+
 - ✅ **Enforced at database level** - No way to bypass in application code
 - ✅ **Automatic filtering** - All queries automatically scoped to organization
 - ✅ **Performance** - Database-level filtering is fast
@@ -91,7 +94,7 @@ organizations
   └── owner_id
 
 profiles (users)
-  ├── id (Clerk user ID)
+  ├── id (Supabase Auth user ID)
   ├── org_id (UUID) → organizations.id
   ├── email
   └── role (owner, admin, guest)
@@ -121,6 +124,7 @@ messages
 ```
 
 **Key points:**
+
 - Every table (except `organizations`) has `org_id`
 - Foreign keys maintain referential integrity
 - RLS policies on every table
@@ -155,12 +159,14 @@ Platform: your-ai-platform.com
 ```
 
 **Benefits:**
+
 - One codebase, one deployment
 - Each client feels like separate platform
 - You manage all infrastructure
 - Centralized monitoring and updates
 
 **Setup:**
+
 1. Deploy AgentFlow once
 2. Create organization for each client
 3. Invite client users to their organization
@@ -194,12 +200,14 @@ SaaS Product: yourproduct.com
 ```
 
 **Benefits:**
+
 - Scale from free to enterprise on same platform
 - Usage tracking per organization
 - Billing per organization
 - Easy upgrades/downgrades
 
 **Implementation:**
+
 ```typescript
 // Check organization's plan limits
 async function canSendMessage(org_id: string, user_id: string) {
@@ -241,6 +249,7 @@ Company: BigCorp
 ```
 
 **Benefits:**
+
 - Compliance: Legal data never mixes with HR
 - Security: Engineering code stays in Engineering
 - Customization: Each department gets their AI tools
@@ -276,12 +285,14 @@ Your Business: AI Platform Provider
 ```
 
 **Benefits:**
+
 - Each customer feels like separate platform
 - Custom domains and branding
 - Complete data isolation
 - You manage infrastructure, they manage users
 
 **Implementation:**
+
 ```typescript
 // Determine organization from domain
 function getOrgFromDomain(hostname: string) {
@@ -304,15 +315,15 @@ function getOrgFromDomain(hostname: string) {
 **During Onboarding:**
 
 ```typescript
-// User completes signup with Clerk
-// Webhook receives user.created event
+// User completes signup with Supabase Auth
+// User is created in Supabase Auth
 
-// In webhook handler:
-async function handleUserCreated(clerkUser) {
+// In onboarding handler:
+async function handleUserOnboarding(user) {
   // 1. Create organization
   const org = await createOrganization({
-    name: `${clerkUser.firstName}'s Organization`,
-    owner_id: clerkUser.id
+    name: `${user.user_metadata?.full_name || 'User'}'s Organization`,
+    owner_id: clerkUser.id,
   });
 
   // 2. Add user to organization as owner
@@ -320,14 +331,14 @@ async function handleUserCreated(clerkUser) {
     id: clerkUser.id,
     org_id: org.id,
     email: clerkUser.emailAddresses[0].emailAddress,
-    role: 'owner'
+    role: 'owner',
   });
 
   // 3. Create default group
   await createGroup({
     org_id: org.id,
     name: 'Everyone',
-    is_default: true
+    is_default: true,
   });
 }
 ```
@@ -342,15 +353,15 @@ async function inviteUserToOrganization(email: string, org_id: string, role: str
     email,
     org_id,
     role,
-    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
   });
 
   // 2. Send email
   await sendEmail({
     to: email,
-    subject: 'You\'ve been invited to join AgentFlow',
+    subject: "You've been invited to join AgentFlow",
     template: 'organization-invite',
-    data: { invite }
+    data: { invite },
   });
 
   return invite;
@@ -360,23 +371,27 @@ async function inviteUserToOrganization(email: string, org_id: string, role: str
 ### Organization Roles
 
 **Owner:**
+
 - Full control over organization
 - Can delete organization
 - Manage billing (future)
 - All Admin permissions
 
 **Admin:**
+
 - Manage AI models
 - Manage groups
 - Invite/remove users
 - Cannot delete organization
 
 **Guest:**
+
 - Limited access to assigned conversations
 - Cannot create AI models
 - Cannot manage users
 
 **Implementation:**
+
 ```typescript
 // Check if user can perform action
 async function hasPermission(user_id: string, org_id: string, action: string) {
@@ -387,7 +402,7 @@ async function hasPermission(user_id: string, org_id: string, action: string) {
   const permissions = {
     owner: ['*'], // All actions
     admin: ['models.*', 'users.*', 'groups.*', 'settings.*'],
-    guest: ['conversations.read', 'messages.send']
+    guest: ['conversations.read', 'messages.send'],
   };
 
   const userPermissions = permissions[user.role] || [];
@@ -403,6 +418,7 @@ async function hasPermission(user_id: string, org_id: string, action: string) {
 ### How It Works
 
 **1. Set organization context:**
+
 ```typescript
 // Middleware sets organization for request
 export async function middleware(req: NextRequest) {
@@ -411,12 +427,13 @@ export async function middleware(req: NextRequest) {
   // Store org_id for database queries
   await supabase.rpc('set_config', {
     parameter: 'app.current_org_id',
-    value: org_id
+    value: org_id,
   });
 }
 ```
 
 **2. Database automatically filters:**
+
 ```sql
 -- User queries conversations
 SELECT * FROM conversations;
@@ -429,11 +446,12 @@ WHERE org_id = current_setting('app.current_org_id')::UUID;
 ```
 
 **3. Inserts are also scoped:**
+
 ```typescript
 // Create new conversation
 await supabase.from('conversations').insert({
   title: 'New Chat',
-  user_id: userId
+  user_id: userId,
   // org_id automatically added by RLS trigger
 });
 ```
@@ -441,6 +459,7 @@ await supabase.from('conversations').insert({
 ### Testing Isolation
 
 **Unit test:**
+
 ```typescript
 test('users cannot access other organizations data', async () => {
   // Create two organizations
@@ -466,6 +485,7 @@ test('users cannot access other organizations data', async () => {
 ### Customization Options
 
 **Basic Settings:**
+
 ```typescript
 interface OrganizationSettings {
   name: string;
@@ -478,6 +498,7 @@ interface OrganizationSettings {
 ```
 
 **Usage Limits:**
+
 ```typescript
 interface OrganizationLimits {
   max_users: number;
@@ -489,6 +510,7 @@ interface OrganizationLimits {
 ```
 
 **Implementation:**
+
 ```typescript
 // Check if organization can add user
 async function canAddUser(org_id: string) {
@@ -555,6 +577,7 @@ async function getConversations(org_id: string) {
 ### Per-Organization Metrics
 
 **Track usage:**
+
 ```typescript
 async function getOrganizationMetrics(org_id: string) {
   return {
@@ -562,12 +585,13 @@ async function getOrganizationMetrics(org_id: string) {
     conversations: await getConversationCount(org_id),
     messages_this_month: await getMessageCount(org_id, 'month'),
     ai_models: await getModelCount(org_id),
-    storage_used: await getStorageUsed(org_id)
+    storage_used: await getStorageUsed(org_id),
   };
 }
 ```
 
 **Billing calculation:**
+
 ```typescript
 async function calculateMonthlyBill(org_id: string) {
   const metrics = await getOrganizationMetrics(org_id);
@@ -592,6 +616,7 @@ async function calculateMonthlyBill(org_id: string) {
 ### 1. Prevent Organization Hopping
 
 **Always verify user belongs to organization:**
+
 ```typescript
 async function performAction(user_id: string, org_id: string, action: string) {
   // Verify user is in organization
@@ -608,11 +633,12 @@ async function performAction(user_id: string, org_id: string, action: string) {
 ### 2. Validate org_id in All Requests
 
 **Never trust client-provided org_id:**
+
 ```typescript
 // ❌ Bad - Client provides org_id
 async function getConversations(org_id: string) {
   return await db.query.conversations.findMany({
-    where: eq(conversations.org_id, org_id) // User could pass any org_id!
+    where: eq(conversations.org_id, org_id), // User could pass any org_id!
   });
 }
 
@@ -620,7 +646,7 @@ async function getConversations(org_id: string) {
 async function getConversations() {
   const { org_id } = await auth(); // From Clerk session
   return await db.query.conversations.findMany({
-    where: eq(conversations.org_id, org_id)
+    where: eq(conversations.org_id, org_id),
   });
 }
 ```
@@ -628,6 +654,7 @@ async function getConversations() {
 ### 3. Audit Logging
 
 **Log all cross-organization attempts:**
+
 ```typescript
 async function logSecurityEvent(event: string, user_id: string, org_id: string, details: any) {
   await db.insert(auditLogs).values({
@@ -636,7 +663,7 @@ async function logSecurityEvent(event: string, user_id: string, org_id: string, 
     org_id,
     details,
     ip_address: req.ip,
-    created_at: new Date()
+    created_at: new Date(),
   });
 
   // Alert on suspicious activity
@@ -653,6 +680,7 @@ async function logSecurityEvent(event: string, user_id: string, org_id: string, 
 ### Database Optimization
 
 **Index all org_id columns:**
+
 ```sql
 CREATE INDEX idx_conversations_org_id ON conversations(org_id);
 CREATE INDEX idx_messages_org_id ON messages(conversation_id, org_id);
@@ -660,6 +688,7 @@ CREATE INDEX idx_profiles_org_id ON profiles(org_id);
 ```
 
 **Partition large tables:**
+
 ```sql
 -- Partition messages by org_id (for very large deployments)
 CREATE TABLE messages (
@@ -676,6 +705,7 @@ CREATE TABLE messages_org_123 PARTITION OF messages
 ### Caching Strategy
 
 **Cache per organization:**
+
 ```typescript
 // Cache key includes org_id
 const cacheKey = `conversations:${org_id}:${user_id}`;
@@ -692,12 +722,13 @@ return conversations;
 ### Rate Limiting
 
 **Limit per organization:**
+
 ```typescript
 import { Ratelimit } from '@upstash/ratelimit';
 
 const ratelimit = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(100, '1 m') // 100 requests per minute
+  limiter: Ratelimit.slidingWindow(100, '1 m'), // 100 requests per minute
 });
 
 async function checkRateLimit(org_id: string) {
@@ -718,7 +749,7 @@ async function checkRateLimit(org_id: string) {
 ```typescript
 // ✅ Good
 const conversations = await db.query.conversations.findMany({
-  where: eq(conversations.org_id, currentOrgId)
+  where: eq(conversations.org_id, currentOrgId),
 });
 
 // ❌ Bad
@@ -758,6 +789,7 @@ describe('Multi-tenant isolation', () => {
 ### 4. Monitor Cross-Organization Errors
 
 **Alert on any cross-org access attempts:**
+
 ```typescript
 if (user.org_id !== requested_org_id) {
   await logSecurityEvent('unauthorized_org_access', user.id, requested_org_id);
@@ -765,7 +797,7 @@ if (user.org_id !== requested_org_id) {
   // Alert security team
   await sendAlert({
     severity: 'high',
-    message: `User ${user.id} attempted to access org ${requested_org_id}`
+    message: `User ${user.id} attempted to access org ${requested_org_id}`,
   });
 
   throw new Error('Unauthorized');
@@ -781,6 +813,7 @@ if (user.org_id !== requested_org_id) {
 **Cause:** RLS policies not enabled or incorrectly configured
 
 **Fix:**
+
 ```sql
 -- Check if RLS is enabled
 SELECT tablename, rowsecurity
@@ -799,6 +832,7 @@ SELECT * FROM pg_policies WHERE tablename = 'conversations';
 **Cause:** Missing indexes on org_id
 
 **Fix:**
+
 ```sql
 -- Add indexes
 CREATE INDEX CONCURRENTLY idx_conversations_org_id ON conversations(org_id);
@@ -812,6 +846,7 @@ EXPLAIN ANALYZE SELECT * FROM conversations WHERE org_id = 'some-uuid';
 **Cause:** Clerk webhook not configured or failing
 
 **Fix:**
+
 1. Check Clerk webhook logs
 2. Verify webhook secret is correct
 3. Test webhook endpoint manually

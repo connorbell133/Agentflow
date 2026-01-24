@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { auth } from '@/lib/auth/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 // Force dynamic rendering for this route
@@ -9,8 +9,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   console.log('[API/invites GET] Request received');
 
   try {
-    const user = await currentUser();
-    const userId = user?.id;
+    const { userId, user } = await auth();
 
     console.log('[API/invites GET] Auth result:', {
       hasUserId: !!userId,
@@ -22,7 +21,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: { message: 'Unauthorized' } }, { status: 401 });
     }
 
-    const userEmail = user?.emailAddresses[0]?.emailAddress;
+    const userEmail = user?.email;
     if (!userEmail) {
       return NextResponse.json({ error: { message: 'User email not found' } }, { status: 400 });
     }
