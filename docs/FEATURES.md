@@ -9,12 +9,14 @@ Complete feature list for AgentFlow.
 ### 🔌 AI Connection Management
 
 **Connect Any HTTP Endpoint**
+
 - Direct API passthrough (OpenAI, Anthropic, etc.)
 - Workflow platforms (n8n, Make.com, Zapier)
 - Custom agents (LangChain, CrewAI, AutoGen)
 - Cloud functions (Cloud Run, Lambda, etc.)
 
 **Configuration**
+
 - YAML-based configuration (version-controlled)
 - Visual import/export interface
 - Request/response mapping
@@ -22,6 +24,7 @@ Complete feature list for AgentFlow.
 - Test connection before deployment
 
 **Management**
+
 - Enable/disable models without deletion
 - Update configurations on the fly
 - API key encryption and secure storage
@@ -32,23 +35,27 @@ Complete feature list for AgentFlow.
 ### 👥 Organization & Access Control
 
 **Multi-Tenant Architecture**
+
 - Complete data isolation per organization
 - Row-Level Security (RLS) at database level
 - Organization approval/waitlist system
 - Unlimited organizations per deployment
 
 **Group-Based Access Control**
+
 - Create unlimited groups per organization
 - Assign AI models to specific groups
 - Users can be in multiple groups
 - Hierarchical access patterns
 
 **Roles & Permissions**
+
 - **Owner:** Full control, billing, deletion
 - **Admin:** Manage AI models, users, groups, settings
 - **Guest:** Limited access to assigned conversations
 
 **User Management**
+
 - Invite users via email
 - Bulk user operations
 - User activity tracking
@@ -59,6 +66,7 @@ Complete feature list for AgentFlow.
 ### 💬 Conversation Interface
 
 **Chat Experience**
+
 - Clean, responsive UI (desktop and mobile)
 - Real-time message streaming
 - Switch AI models mid-conversation
@@ -66,6 +74,7 @@ Complete feature list for AgentFlow.
 - Code syntax highlighting
 
 **Conversation Management**
+
 - Unlimited conversations
 - Conversation history and search
 - Rename and organize conversations
@@ -73,6 +82,7 @@ Complete feature list for AgentFlow.
 - Export conversations (JSON, Markdown)
 
 **Message Features**
+
 - Edit and resend messages
 - Copy messages to clipboard
 - Message timestamps
@@ -80,6 +90,7 @@ Complete feature list for AgentFlow.
 - Error handling and retry
 
 **Feedback System**
+
 - Thumbs up/down on AI responses
 - Written feedback comments
 - Feedback analytics (coming soon)
@@ -89,18 +100,22 @@ Complete feature list for AgentFlow.
 ### 🔒 Security & Data Isolation
 
 **Authentication**
-- Clerk integration (email, Google, GitHub, etc.)
-- Session management
+
+- Supabase Auth integration (email, OAuth providers)
+- Session management via HTTP-only cookies
 - Secure password requirements
-- 2FA support (via Clerk)
+- Email verification
+- OAuth support (Google, GitHub, etc. via Supabase)
 
 **Authorization**
+
 - Row-Level Security (RLS) policies
 - Organization-based data isolation
 - Group-based model access
 - API endpoint protection
 
 **Data Security**
+
 - API keys encrypted at rest
 - Secure credential handling
 - HTTPS enforced in production
@@ -109,6 +124,7 @@ Complete feature list for AgentFlow.
 - XSS protection (DOMPurify)
 
 **Audit & Compliance**
+
 - Complete conversation history
 - User action logging
 - Organization activity tracking
@@ -116,9 +132,10 @@ Complete feature list for AgentFlow.
 
 ---
 
-###  🛠️ Developer Experience
+### 🛠️ Developer Experience
 
 **Tech Stack**
+
 - Next.js 14 with App Router
 - React 18 with Server Components
 - TypeScript (full coverage)
@@ -126,6 +143,7 @@ Complete feature list for AgentFlow.
 - Tailwind CSS for styling
 
 **Development Tools**
+
 - Hot module replacement
 - Type-safe database queries
 - Comprehensive error messages
@@ -133,6 +151,7 @@ Complete feature list for AgentFlow.
 - React DevTools support
 
 **Database Management**
+
 - Supabase CLI integration
 - Migration system
 - Type generation from schema
@@ -140,6 +159,7 @@ Complete feature list for AgentFlow.
 - Seed data scripts
 
 **Testing**
+
 - Unit test infrastructure (Jest)
 - E2E tests (Playwright)
 - Component testing (React Testing Library)
@@ -150,6 +170,7 @@ Complete feature list for AgentFlow.
 ## 🔜 Coming Soon
 
 ### Analytics & Tracking
+
 - Token usage tracking per model
 - Cost analysis per conversation
 - Usage metrics dashboard
@@ -157,6 +178,7 @@ Complete feature list for AgentFlow.
 - Organization-wide analytics
 
 ### Multimedia Support
+
 - File uploads (PDFs, images, docs)
 - Image analysis (vision models)
 - Voice input (speech-to-text)
@@ -164,6 +186,7 @@ Complete feature list for AgentFlow.
 - File attachment in conversations
 
 ### Collaboration
+
 - Conversation sharing
 - Team mentions (@user)
 - Shared conversations across teams
@@ -171,6 +194,7 @@ Complete feature list for AgentFlow.
 - Conversation comments
 
 ### Advanced Features
+
 - Conversation branching
 - Custom export formats
 - Mobile apps (iOS/Android)
@@ -179,6 +203,7 @@ Complete feature list for AgentFlow.
 - Scheduled AI tasks
 
 ### Enterprise
+
 - SSO/SAML integration
 - Advanced audit logging
 - Custom branding/white-label
@@ -191,16 +216,19 @@ Complete feature list for AgentFlow.
 ## 📖 Feature Documentation
 
 ### For Users
+
 - [Getting Started](./getting-started/INSTALLATION.md)
 - [First Endpoint](./getting-started/FIRST_ENDPOINT.md)
 - [Use Cases](./USE_CASES.md)
 
 ### For Developers
+
 - [YAML Configuration](./guides/YAML_CONFIG.md)
 - [Access Control](./guides/ACCESS_CONTROL.md)
 - [Architecture](./ARCHITECTURE.md)
 
 ### For Admins
+
 - [Deployment](./DEPLOYMENT.md)
 - [Security](./SECURITY.md)
 - [Performance](./PERFORMANCE_OPTIMIZATION_GUIDE.md)

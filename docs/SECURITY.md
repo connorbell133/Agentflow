@@ -7,16 +7,18 @@
 
 ## Executive Summary
 
-This comprehensive security audit identified **15 critical**, **18 high**, **22 medium**, and **8 low** severity issues across the application. The most concerning findings relate to exposed credentials, incomplete authorization controls, vulnerable dependencies, and insufficient security headers. While the application demonstrates some good security practices (Supabase parameterized queries for SQL injection prevention, Clerk authentication, tenant isolation patterns), immediate action is required on critical vulnerabilities.
+This comprehensive security audit identified **15 critical**, **18 high**, **22 medium**, and **8 low** severity issues across the application. The most concerning findings relate to exposed credentials, incomplete authorization controls, vulnerable dependencies, and insufficient security headers. While the application demonstrates some good security practices (Supabase parameterized queries for SQL injection prevention, Supabase Auth authentication, tenant isolation patterns), immediate action is required on critical vulnerabilities.
 
 > **Note:** This audit was conducted in October 2024. References to `DATABASE_URL` reflect the historical database connection method. The project now uses Supabase with environment variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`. All database connections now go through the Supabase client in `src/lib/supabase/`.
 
 ## Critical Findings Requiring Immediate Action
 
 ### 1. **[CRITICAL] Exposed Production Credentials in Version Control**
+
 **Severity:** Critical
 **Location:** `.env.local` (if committed to version control)
 **Issue Description:** The `.env.local` file contains actual API keys and secrets that may be committed to the repository:
+
 - Clerk API keys exposed (lines 4-5, 14)
 - Database connection string visible (line 3)
 - CRON_SECRET exposed (line 21)
@@ -24,6 +26,7 @@ This comprehensive security audit identified **15 critical**, **18 high**, **22 
 **Impact:** Complete compromise of authentication system, unauthorized database access, and potential data breach.
 
 **Recommendation:**
+
 1. Immediately rotate ALL exposed credentials
 2. Remove `.env.local` from version control
 3. Add `.env.local` to `.gitignore`
@@ -39,6 +42,7 @@ git commit -m "Remove sensitive credentials from version control"
 ```
 
 ### 2. **[CRITICAL] Overly Permissive CORS Configuration**
+
 **Severity:** Critical
 **Location:** `src/middleware.ts:23`
 **Issue Description:** CORS allows all origins (`*`) for API routes
@@ -46,6 +50,7 @@ git commit -m "Remove sensitive credentials from version control"
 **Impact:** Any website can make requests to your API endpoints, enabling CSRF attacks and data exfiltration.
 
 **Recommendation:**
+
 ```typescript
 // src/middleware.ts - Replace line 23
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['https://your-domain.com'];
@@ -58,6 +63,7 @@ if (origin && allowedOrigins.includes(origin)) {
 ```
 
 ### 3. **[CRITICAL] Incomplete Admin Authorization Checks**
+
 **Severity:** Critical
 **Location:** `src/app/api/admin/users/remove/route.ts`
 **Issue Description:** Admin route lacks any authorization checks
@@ -65,6 +71,7 @@ if (origin && allowedOrigins.includes(origin)) {
 **Impact:** Any authenticated user could potentially perform admin actions
 
 **Recommendation:**
+
 ```typescript
 // Add to all admin routes
 import { auth } from '@clerk/nextjs/server';
@@ -89,6 +96,7 @@ export async function GET() {
 ## High Severity Findings
 
 ### 4. **[HIGH] Content Security Policy Too Permissive**
+
 **Severity:** High
 **Location:** `src/middleware/security-headers.ts:9-10`
 **Issue Description:** CSP allows `'unsafe-inline'` and `'unsafe-eval'` for scripts
@@ -96,15 +104,18 @@ export async function GET() {
 **Impact:** Reduces XSS protection effectiveness, allows inline script execution
 
 **Recommendation:**
+
 ```typescript
 // Remove unsafe-inline and unsafe-eval, use nonces instead
-"script-src 'self' 'nonce-{generated}' https://*.clerk.com;"
+"script-src 'self' 'nonce-{generated}' https://*.clerk.com;";
 ```
 
 ### 5. **[HIGH] Vulnerable Dependencies**
+
 **Severity:** High
 **Location:** `package.json` dependencies
 **Issue Description:** npm audit reveals 7 vulnerabilities including:
+
 - Next.js SSRF vulnerability (14.2.13 < 14.2.31)
 - esbuild development server vulnerability
 - Regular Expression DoS in brace-expansion
@@ -112,6 +123,7 @@ export async function GET() {
 **Impact:** Potential SSRF attacks, DoS vulnerabilities
 
 **Recommendation:**
+
 ```bash
 # Update vulnerable packages
 npm audit fix
@@ -120,6 +132,7 @@ npm update next@latest
 ```
 
 ### 6. **[HIGH] JWT Token Logging**
+
 **Severity:** High
 **Location:** `src/lib/auth/jwt-verify.ts:9,16`
 **Issue Description:** JWT tokens are being logged to console
@@ -127,6 +140,7 @@ npm update next@latest
 **Impact:** Token exposure in logs could lead to authentication bypass
 
 **Recommendation:**
+
 ```typescript
 // Remove or conditionally log only in development
 if (process.env.NODE_ENV === 'development') {
@@ -135,6 +149,7 @@ if (process.env.NODE_ENV === 'development') {
 ```
 
 ### 7. **[HIGH] Database Connection String Fallback**
+
 **Severity:** High
 **Location:** `src/db/connection.ts:6`
 **Issue Description:** Hardcoded fallback database connection string with credentials
@@ -142,6 +157,7 @@ if (process.env.NODE_ENV === 'development') {
 **Impact:** Potential database access if environment variable is missing
 
 **Recommendation:**
+
 ```typescript
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -150,9 +166,11 @@ if (!connectionString) {
 ```
 
 ### 8. **[HIGH] Missing Rate Limiting on Critical Endpoints**
+
 **Severity:** High
 **Location:** Multiple API routes
 **Issue Description:** Several critical endpoints lack rate limiting:
+
 - `/api/conversations/route.ts`
 - `/api/messages/route.ts`
 - `/api/clerk/webhook/route.ts`
@@ -160,6 +178,7 @@ if (!connectionString) {
 **Impact:** Susceptible to brute force, DoS attacks, and resource exhaustion
 
 **Recommendation:**
+
 ```typescript
 import { rateLimit } from '@/lib/security/rate-limiter';
 
@@ -183,37 +202,41 @@ export async function POST(req: NextRequest) {
 ## Medium Severity Findings
 
 ### 9. **[MEDIUM] Insufficient Security Headers**
+
 **Severity:** Medium
 **Location:** `next.config.mjs`
 **Issue Description:** Missing critical security headers:
+
 - No Strict-Transport-Security (HSTS)
 - No Content-Security-Policy in next.config
 - X-XSS-Protection is deprecated
 
 **Recommendation:**
+
 ```javascript
 // next.config.mjs
 const securityHeaders = [
   {
     key: 'Strict-Transport-Security',
-    value: 'max-age=63072000; includeSubDomains; preload'
+    value: 'max-age=63072000; includeSubDomains; preload',
   },
   {
     key: 'X-Content-Type-Options',
-    value: 'nosniff'
+    value: 'nosniff',
   },
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=()'
+    value: 'camera=(), microphone=(), geolocation=()',
   },
   {
     key: 'X-Frame-Options',
-    value: 'DENY'
-  }
+    value: 'DENY',
+  },
 ];
 ```
 
 ### 10. **[MEDIUM] Sensitive Data in Error Messages**
+
 **Severity:** Medium
 **Location:** `src/lib/infrastructure/logger.ts:10`
 **Issue Description:** Logger may expose sensitive data in error messages
@@ -221,6 +244,7 @@ const securityHeaders = [
 **Impact:** Information disclosure through error logs
 
 **Recommendation:**
+
 ```typescript
 // Sanitize sensitive data before logging
 const sanitizeData = (data: any) => {
@@ -237,6 +261,7 @@ const sanitizeData = (data: any) => {
 ```
 
 ### 11. **[MEDIUM] Webhook Secret Validation Weakness**
+
 **Severity:** Medium
 **Location:** `src/app/api/clerk/webhook/route.ts:34`
 **Issue Description:** Empty webhook secret fallback could bypass signature verification
@@ -244,6 +269,7 @@ const sanitizeData = (data: any) => {
 **Impact:** Potential webhook spoofing if environment variable is missing
 
 **Recommendation:**
+
 ```typescript
 const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
 if (!webhookSecret) {
@@ -254,6 +280,7 @@ const wh = new Webhook(webhookSecret);
 ```
 
 ### 12. **[MEDIUM] Incomplete Tenant Isolation Verification**
+
 **Severity:** Medium
 **Location:** `src/actions/chat/conversations.ts`
 **Issue Description:** Some queries don't consistently use tenant-aware database wrapper
@@ -261,6 +288,7 @@ const wh = new Webhook(webhookSecret);
 **Impact:** Potential cross-organization data access
 
 **Recommendation:**
+
 ```typescript
 // Always use tenant-aware DB wrapper for org-scoped resources
 import { getTenantDb } from '@/lib/db/tenant-db';
@@ -272,6 +300,7 @@ export async function getConversations() {
 ```
 
 ### 13. **[MEDIUM] File Upload Security**
+
 **Severity:** Medium
 **Location:** Not found in codebase
 **Issue Description:** No file upload validation or virus scanning implementation found
@@ -279,6 +308,7 @@ export async function getConversations() {
 **Impact:** Malicious file uploads, storage attacks, XSS through file content
 
 **Recommendation:**
+
 ```typescript
 // Implement file validation
 const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
@@ -298,6 +328,7 @@ function validateFile(file: File) {
 ## Low Severity Findings
 
 ### 14. **[LOW] Missing CSRF Protection for Forms**
+
 **Severity:** Low
 **Location:** Form submissions across the application
 **Issue Description:** No explicit CSRF token implementation found
@@ -305,21 +336,22 @@ function validateFile(file: File) {
 **Impact:** Potential CSRF attacks on state-changing operations
 
 **Recommendation:** Implement CSRF tokens or use SameSite cookie attributes:
+
 ```typescript
 // Set cookies with SameSite attribute
 res.setHeader('Set-Cookie', 'session=value; SameSite=Strict; Secure; HttpOnly');
 ```
 
 ### 15. **[LOW] Verbose Error Messages in Development**
+
 **Severity:** Low
 **Location:** Various error handlers
 **Issue Description:** Detailed error messages could leak in production if NODE_ENV is misconfigured
 
 **Recommendation:**
+
 ```typescript
-const errorMessage = process.env.NODE_ENV === 'production'
-  ? 'An error occurred'
-  : error.message;
+const errorMessage = process.env.NODE_ENV === 'production' ? 'An error occurred' : error.message;
 ```
 
 ## Security Best Practices Being Followed
@@ -334,24 +366,28 @@ const errorMessage = process.env.NODE_ENV === 'production'
 ## Recommended Security Improvements Roadmap
 
 ### Phase 1: Critical (Immediate - Within 24 hours)
+
 1. ⚠️ Rotate all exposed credentials
 2. ⚠️ Remove sensitive files from version control
 3. ⚠️ Fix CORS configuration
 4. ⚠️ Implement admin authorization checks
 
 ### Phase 2: High Priority (Within 1 week)
+
 1. Update vulnerable dependencies
 2. Remove sensitive data from logs
 3. Implement rate limiting on all endpoints
 4. Fix CSP headers
 
 ### Phase 3: Medium Priority (Within 2 weeks)
+
 1. Add comprehensive security headers
 2. Implement file upload validation
 3. Add CSRF protection
 4. Complete tenant isolation migration
 
 ### Phase 4: Ongoing
+
 1. Regular dependency updates
 2. Security training for development team
 3. Implement automated security testing
@@ -382,11 +418,13 @@ const errorMessage = process.env.NODE_ENV === 'production'
 ## Additional Security Recommendations
 
 1. **Implement Content Security Policy Report-Only Mode** first to identify violations:
+
 ```typescript
 response.headers.set('Content-Security-Policy-Report-Only', cspPolicy);
 ```
 
 2. **Add Security.txt file** for responsible disclosure:
+
 ```text
 # /.well-known/security.txt
 Contact: security@your-domain.com
@@ -395,13 +433,13 @@ Preferred-Languages: en
 ```
 
 3. **Implement Subresource Integrity (SRI)** for external scripts:
+
 ```html
-<script src="https://example.com/script.js"
-        integrity="sha384-..."
-        crossorigin="anonymous"></script>
+<script src="https://example.com/script.js" integrity="sha384-..." crossorigin="anonymous"></script>
 ```
 
 4. **Add Security Testing to CI/CD Pipeline**:
+
 ```yaml
 # .github/workflows/security.yml
 - name: Run Security Audit
@@ -418,9 +456,10 @@ The application shows a foundation of security awareness with Clerk authenticati
 
 ---
 
-*This report should be treated as confidential and shared only with authorized personnel. For questions or clarification on any findings, please contact the security team.*
+_This report should be treated as confidential and shared only with authorized personnel. For questions or clarification on any findings, please contact the security team._
 
 **Next Steps:**
+
 1. Review this report with the development team
 2. Create tickets for each finding in your issue tracker
 3. Prioritize based on severity and implement fixes
@@ -433,6 +472,7 @@ The application shows a foundation of security awareness with Clerk authenticati
 ### Phase 1: Critical Issues (Implement Immediately)
 
 #### 1. Fix CORS Configuration
+
 **File:** `src/middleware.ts`
 **Current Issue:** Line 23 allows all origins with `*`
 
@@ -485,12 +525,15 @@ export default clerkMiddleware(async (auth, req) => {
 ```
 
 #### 2. Implement Admin Authorization Checks
+
 **Files to Update:**
+
 - `src/app/api/admin/users/remove/route.ts`
 - `src/app/api/admin/users/add/route.ts`
 - All files in `src/app/api/admin/`
 
 **STEP 1: Create authorization helper**
+
 ```typescript
 // Create new file: src/lib/auth/permissions.ts
 import { db } from '@/db/connection';
@@ -501,16 +544,11 @@ export async function isUserAdmin(userId: string, org_id: string): Promise<boole
   try {
     const userGroups = await db
       .select({
-        role: groups.role
+        role: groups.role,
       })
       .from(groupMap)
       .innerJoin(groups, eq(groupMap.groupId, groups.id))
-      .where(
-        and(
-          eq(groupMap.userId, userId),
-          eq(groups.org_id, org_id)
-        )
-      );
+      .where(and(eq(groupMap.userId, userId), eq(groups.org_id, org_id)));
 
     return userGroups.some(g => g.role === 'admin' || g.role === 'owner');
   } catch (error) {
@@ -534,6 +572,7 @@ export async function requireAdmin(userId: string | null, org_id: string | null)
 ```
 
 **STEP 2: Update all admin routes**
+
 ```typescript
 // Update src/app/api/admin/users/remove/route.ts
 import { NextResponse } from 'next/server';
@@ -567,6 +606,7 @@ export async function POST(req: Request) {
 ### Phase 2: High Priority Issues (Within 3 Days)
 
 #### 3. Fix Content Security Policy
+
 **File:** `src/middleware/security-headers.ts`
 
 ```typescript
@@ -586,25 +626,26 @@ export function addSecurityHeaders(request: NextRequest, response: NextResponse)
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; " +
-    `script-src 'self' 'nonce-${nonce}' https://*.clerk.com https://*.clerk.accounts.dev https://clerk.com; ` +
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +  // unsafe-inline needed for Tailwind
-    "font-src 'self' https://fonts.gstatic.com; " +
-    "img-src 'self' data: https: blob:; " +
-    "connect-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://api.clerk.com https://clerk.com https://clerk-telemetry.com https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://*.stripe.com https://r.stripe.com https://*.ingest.sentry.io ws://localhost:* http://localhost:*; " +
-    "frame-src 'self' https://*.clerk.com https://*.clerk.accounts.dev; " +
-    "worker-src 'self' blob:; " +
-    "frame-ancestors 'none'; " +
-    "base-uri 'self'; " +
-    "form-action 'self'; " +
-    "upgrade-insecure-requests; " +
-    "block-all-mixed-content"
+      `script-src 'self' 'nonce-${nonce}' https://*.clerk.com https://*.clerk.accounts.dev https://clerk.com; ` +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " + // unsafe-inline needed for Tailwind
+      "font-src 'self' https://fonts.gstatic.com; " +
+      "img-src 'self' data: https: blob:; " +
+      "connect-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://api.clerk.com https://clerk.com https://clerk-telemetry.com https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://*.stripe.com https://r.stripe.com https://*.ingest.sentry.io ws://localhost:* http://localhost:*; " +
+      "frame-src 'self' https://*.clerk.com https://*.clerk.accounts.dev; " +
+      "worker-src 'self' blob:; " +
+      "frame-ancestors 'none'; " +
+      "base-uri 'self'; " +
+      "form-action 'self'; " +
+      'upgrade-insecure-requests; ' +
+      'block-all-mixed-content'
   );
 
   // Enhanced security headers
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set('Permissions-Policy',
+  response.headers.set(
+    'Permissions-Policy',
     'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()'
   );
 
@@ -621,6 +662,7 @@ export function addSecurityHeaders(request: NextRequest, response: NextResponse)
 ```
 
 #### 4. Update Vulnerable Dependencies
+
 ```bash
 # Run these commands
 npm update next@latest
@@ -633,6 +675,7 @@ npm audit
 ```
 
 #### 5. Fix JWT Token Logging
+
 **File:** `src/lib/auth/jwt-verify.ts`
 
 ```typescript
@@ -673,6 +716,7 @@ export async function verifyJWT(token: string): Promise<string | null> {
 ```
 
 #### 6. Fix Database Connection String Fallback
+
 **File:** `src/db/connection.ts`
 
 ```typescript
@@ -685,8 +729,7 @@ import * as schema from './schema';
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
   throw new Error(
-    'DATABASE_URL environment variable is required. ' +
-    'Please set it in your .env.local file.'
+    'DATABASE_URL environment variable is required. ' + 'Please set it in your .env.local file.'
   );
 }
 
@@ -694,7 +737,9 @@ if (!connectionString) {
 ```
 
 #### 7. Implement Rate Limiting
+
 **STEP 1: Create rate limiting utility**
+
 ```typescript
 // Create src/lib/security/rate-limiter.ts
 import { NextRequest } from 'next/server';
@@ -785,6 +830,7 @@ export const adminLimiter = createRateLimiter({
 ```
 
 **STEP 2: Apply to API routes**
+
 ```typescript
 // Update src/app/api/conversations/route.ts
 import { NextRequest, NextResponse } from 'next/server';
@@ -815,6 +861,7 @@ export async function GET(req: NextRequest) {
 ### Phase 3: Medium Priority Issues (Within 1 Week)
 
 #### 8. Enhanced Security Headers in Next.config
+
 **File:** `next.config.mjs`
 
 ```javascript
@@ -822,36 +869,36 @@ export async function GET(req: NextRequest) {
 const securityHeaders = [
   {
     key: 'X-DNS-Prefetch-Control',
-    value: 'on'
+    value: 'on',
   },
   {
     key: 'Strict-Transport-Security',
-    value: 'max-age=63072000; includeSubDomains; preload'
+    value: 'max-age=63072000; includeSubDomains; preload',
   },
   {
     key: 'X-Frame-Options',
-    value: 'DENY'
+    value: 'DENY',
   },
   {
     key: 'X-Content-Type-Options',
-    value: 'nosniff'
+    value: 'nosniff',
   },
   {
     key: 'Referrer-Policy',
-    value: 'strict-origin-when-cross-origin'
+    value: 'strict-origin-when-cross-origin',
   },
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+    value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
   },
   {
     key: 'X-Permitted-Cross-Domain-Policies',
-    value: 'none'
+    value: 'none',
   },
   {
     key: 'Expect-CT',
-    value: 'enforce, max-age=86400'
-  }
+    value: 'enforce, max-age=86400',
+  },
 ];
 
 const nextConfig = {
@@ -868,10 +915,10 @@ const nextConfig = {
           ...securityHeaders,
           {
             key: 'Cache-Control',
-            value: 'no-store, no-cache, must-revalidate, proxy-revalidate'
-          }
-        ]
-      }
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          },
+        ],
+      },
     ];
   },
   // ... rest of config
@@ -879,6 +926,7 @@ const nextConfig = {
 ```
 
 #### 9. Fix Logger to Sanitize Sensitive Data
+
 **File:** `src/lib/infrastructure/logger.ts`
 
 ```typescript
@@ -918,44 +966,45 @@ function sanitizeData(data: any): any {
 }
 
 export const createLogger = (fileName: string) => {
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const isDebugEnabled = process.env.NEXT_PUBLIC_DEBUG === 'true' || process.env.DEBUG === 'true';
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const isDebugEnabled = process.env.NEXT_PUBLIC_DEBUG === 'true' || process.env.DEBUG === 'true';
 
-    const formatMessage = (level: string, message: string, data?: any) => {
-        const sanitizedData = sanitizeData(data);
-        const formattedMessage = `[${level}] [${fileName}] ${message}`;
-        if (sanitizedData) {
-            return `${formattedMessage} | Data: ${JSON.stringify(sanitizedData)}`;
-        }
-        return formattedMessage;
-    };
+  const formatMessage = (level: string, message: string, data?: any) => {
+    const sanitizedData = sanitizeData(data);
+    const formattedMessage = `[${level}] [${fileName}] ${message}`;
+    if (sanitizedData) {
+      return `${formattedMessage} | Data: ${JSON.stringify(sanitizedData)}`;
+    }
+    return formattedMessage;
+  };
 
-    return {
-        info: (message: string, data?: any) => {
-            if (isDevelopment && isDebugEnabled) {
-                console.log(formatMessage("INFO", message, data));
-            }
-        },
-        warn: (message: string, data?: any) => {
-            if (isDevelopment && isDebugEnabled) {
-                console.warn(formatMessage("WARN", message, data));
-            }
-        },
-        error: (message: string, data?: any) => {
-            if (isDevelopment || process.env.NEXT_PUBLIC_LOG_ERRORS === 'true') {
-                console.error(formatMessage("ERROR", message, data));
-            }
-        },
-        debug: (message: string, data?: any) => {
-            if (isDevelopment && isDebugEnabled) {
-                console.debug(formatMessage("DEBUG", message, data));
-            }
-        },
-    };
+  return {
+    info: (message: string, data?: any) => {
+      if (isDevelopment && isDebugEnabled) {
+        console.log(formatMessage('INFO', message, data));
+      }
+    },
+    warn: (message: string, data?: any) => {
+      if (isDevelopment && isDebugEnabled) {
+        console.warn(formatMessage('WARN', message, data));
+      }
+    },
+    error: (message: string, data?: any) => {
+      if (isDevelopment || process.env.NEXT_PUBLIC_LOG_ERRORS === 'true') {
+        console.error(formatMessage('ERROR', message, data));
+      }
+    },
+    debug: (message: string, data?: any) => {
+      if (isDevelopment && isDebugEnabled) {
+        console.debug(formatMessage('DEBUG', message, data));
+      }
+    },
+  };
 };
 ```
 
 #### 10. Fix Webhook Secret Validation
+
 **File:** `src/app/api/clerk/webhook/route.ts`
 
 ```typescript
@@ -998,6 +1047,7 @@ export async function POST(req: Request) {
 ```
 
 #### 11. Complete Tenant Isolation Migration
+
 **Update all conversation queries to use tenant-aware wrapper**
 
 ```typescript
@@ -1010,7 +1060,7 @@ export async function getConversations(userId: string) {
   try {
     const conversations = await tenantDb.conversations.findByUser({
       limit: 50,
-      offset: 0
+      offset: 0,
     });
 
     return { data: conversations, error: null };
@@ -1032,7 +1082,7 @@ export async function getConversationWithMessages(conversationId: string) {
 
     return {
       conversation,
-      messages
+      messages,
     };
   } catch (error) {
     if (error.name === 'TenantResourceNotFound') {
@@ -1045,6 +1095,7 @@ export async function getConversationWithMessages(conversationId: string) {
 ```
 
 #### 12. Implement File Upload Validation
+
 **Create new file: src/lib/security/file-upload.ts**
 
 ```typescript
@@ -1067,7 +1118,7 @@ export function validateFile(file: File, type: 'image' | 'document' | 'any'): Fi
   if (file.size > maxSize) {
     return {
       valid: false,
-      error: `File size exceeds maximum allowed (${maxSize / 1024 / 1024}MB)`
+      error: `File size exceeds maximum allowed (${maxSize / 1024 / 1024}MB)`,
     };
   }
 
@@ -1088,7 +1139,7 @@ export function validateFile(file: File, type: 'image' | 'document' | 'any'): Fi
   if (!allowedTypes.includes(file.type)) {
     return {
       valid: false,
-      error: `File type ${file.type} is not allowed`
+      error: `File type ${file.type} is not allowed`,
     };
   }
 
@@ -1097,7 +1148,7 @@ export function validateFile(file: File, type: 'image' | 'document' | 'any'): Fi
   if (!extension || !isValidExtension(file.type, extension)) {
     return {
       valid: false,
-      error: 'File extension does not match file type'
+      error: 'File extension does not match file type',
     };
   }
 
@@ -1105,7 +1156,7 @@ export function validateFile(file: File, type: 'image' | 'document' | 'any'): Fi
   if (file.name.includes('..') || file.name.includes('/') || file.name.includes('\\')) {
     return {
       valid: false,
-      error: 'Invalid file name'
+      error: 'Invalid file name',
     };
   }
 
@@ -1142,6 +1193,7 @@ export function sanitizeFilename(filename: string): string {
 ### Phase 4: Low Priority Issues (Within 2 Weeks)
 
 #### 13. Add CSRF Protection
+
 **Create CSRF middleware**
 
 ```typescript
@@ -1191,6 +1243,7 @@ export function setCSRFToken(response: NextResponse): void {
 ```
 
 #### 14. Implement Production Error Handling
+
 **Update all error responses**
 
 ```typescript
@@ -1255,12 +1308,14 @@ Add these npm scripts to `package.json`:
 ### Monitoring & Alerting
 
 1. **Set up Sentry** for error tracking:
+
 ```bash
 npm install @sentry/nextjs
 npx @sentry/wizard@latest -i nextjs
 ```
 
 2. **Add security event logging**:
+
 ```typescript
 // src/lib/security/audit-log.ts
 export async function logSecurityEvent(event: {
@@ -1271,7 +1326,7 @@ export async function logSecurityEvent(event: {
 }) {
   console.log('[SECURITY]', {
     timestamp: new Date().toISOString(),
-    ...event
+    ...event,
   });
 
   // In production, send to monitoring service

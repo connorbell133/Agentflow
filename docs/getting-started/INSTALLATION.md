@@ -13,7 +13,7 @@ Before you begin, ensure you have the following installed:
 - **npm** or **yarn** - Comes with Node.js
 - **Git** - [Download here](https://git-scm.com/)
 - **Supabase CLI** - Installation instructions below
-- **Clerk Account** - [Sign up here](https://clerk.com) (free tier available)
+- **Docker Desktop** - Required for local Supabase (or use cloud Supabase)
 
 ### Check Your Prerequisites
 
@@ -42,6 +42,7 @@ npm install
 ```
 
 **Verification:**
+
 ```bash
 # Should complete without errors
 # node_modules/ directory should be created
@@ -53,22 +54,26 @@ ls node_modules/ | head -5
 ## Step 2: Install Supabase CLI
 
 ### macOS
+
 ```bash
 brew install supabase/tap/supabase
 ```
 
 ### Windows
+
 ```bash
 scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
 scoop install supabase
 ```
 
 ### Linux
+
 ```bash
 brew install supabase/tap/supabase
 ```
 
 **Verification:**
+
 ```bash
 supabase --version
 # Should output: supabase version X.X.X
@@ -110,6 +115,7 @@ supabase db reset
 ```
 
 **Verification:**
+
 ```bash
 # Check Supabase status
 supabase status
@@ -141,14 +147,11 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...  # anon ke
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...       # service_role key from output
 ```
 
-#### Clerk Configuration
-
-**You'll set these up in the next step.** Leave them blank for now:
+#### Application Configuration
 
 ```env
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-CLERK_SECRET_KEY=
-CLERK_WEBHOOK_SECRET=
+# Application URL
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 #### Other Required Variables
@@ -168,6 +171,7 @@ SKIP_CACHE=true
 ```
 
 **Generate CRON_SECRET:**
+
 ```bash
 # On macOS/Linux
 openssl rand -base64 32
@@ -177,13 +181,18 @@ openssl rand -base64 32
 
 ---
 
-## Step 5: Set Up Clerk Authentication
+## Step 5: Enable Email Authentication in Supabase
 
-Clerk handles all user authentication for AgentFlow. You'll need to create a free account and configure it.
+Supabase Auth handles all user authentication for AgentFlow. For local development, email authentication is already enabled by default.
 
-**→ See [Clerk Setup Guide](./CLERK_SETUP.md) for detailed instructions.**
+### Verify Email Settings (Optional)
 
-After completing Clerk setup, come back here and continue to Step 6.
+1. **Open Supabase Studio**: http://127.0.0.1:54323
+2. **Navigate to**: Authentication → Settings
+3. **Email Auth**: Should be enabled by default
+4. **Email Confirmation**: Disabled for local dev (enabled in production)
+
+**For production setup**, see [Supabase Auth Setup Guide](../SUPABASE_AUTH_SETUP.md).
 
 ---
 
@@ -202,6 +211,7 @@ You should see:
 ```
 
 **Verification:**
+
 - Visit http://localhost:3000
 - You should see the sign-in page
 - No error messages in terminal
@@ -213,12 +223,14 @@ You should see:
 1. **Visit** http://localhost:3000
 2. **Click** "Sign Up"
 3. **Enter** your email and create a password
-4. **Verify** your email (check Inbucket at http://127.0.0.1:54324 for local dev)
+4. **For local dev**: Email confirmation is disabled, so you'll be signed in immediately
 5. **Complete** onboarding:
    - Enter organization name
    - Submit
 
 You're now signed in!
+
+**Note**: In local development, check Inbucket at http://127.0.0.1:54324 to see any emails that would be sent (like password resets).
 
 ---
 
@@ -230,12 +242,16 @@ Visit Supabase Studio: http://127.0.0.1:54323
 
 1. Go to **Table Editor**
 2. You should see tables:
-   - `profiles` - Should have your user
+   - `profiles` - Should have your user (linked to Supabase Auth user)
    - `organizations` - Should have your organization
    - `conversations` - Empty (you haven't chatted yet)
    - `messages` - Empty
    - `models` - Empty (you haven't connected an AI yet)
    - `groups` - Should have default groups
+
+3. **Check Authentication**: Go to **Authentication** → **Users**
+   - You should see your user account
+   - Email should match what you signed up with
 
 ### Check Application
 

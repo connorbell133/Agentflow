@@ -132,7 +132,10 @@ export const useWizardState = (
     ];
 
     // Only show template selection for new models
-    if (isCreating && wizardState.templateMode === undefined) {
+    if (
+      isCreating &&
+      (wizardState.templateMode === undefined || wizardState.templateMode === null)
+    ) {
       return [
         { id: 'template', title: 'Choose Template', description: 'Select starting point' },
         ...baseSteps,

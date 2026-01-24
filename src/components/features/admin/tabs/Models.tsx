@@ -246,7 +246,7 @@ export default function Models({ org_id }: ModelsProps) {
             endpoint_type: 'webhook',
             stream_config: null,
             template_id: null,
-            template_mode: 'none',
+            template_mode: null,
             template_modified_fields: {},
           }}
           isCreating={true}

@@ -2,46 +2,16 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function addSecurityHeaders(request: NextRequest, response: NextResponse) {
-  // Build CSP directives dynamically based on environment
-  const clerkDomain = process.env.CLERK_DOMAIN;
-
-  // Base Clerk domains
-  const clerkScriptSources = [
-    'https://*.clerk.com',
-    'https://*.clerk.accounts.dev',
-    'https://clerk.com',
-  ];
-
-  const clerkConnectSources = [
-    'https://*.clerk.com',
-    'https://*.clerk.accounts.dev',
-    'https://api.clerk.com',
-    'https://clerk.com',
-    'https://clerk-telemetry.com',
-  ];
-
-  const clerkFrameSources = ['https://*.clerk.com', 'https://*.clerk.accounts.dev'];
-
-  // Add custom Clerk domain if configured
-  if (clerkDomain) {
-    const clerkDomainUrl = `https://${clerkDomain}`;
-    const clerkDomainWildcard = `https://*.${clerkDomain}`;
-
-    clerkScriptSources.push(clerkDomainUrl, clerkDomainWildcard);
-    clerkConnectSources.push(clerkDomainUrl, clerkDomainWildcard);
-    clerkFrameSources.push(clerkDomainUrl, clerkDomainWildcard);
-  }
-
   // Content Security Policy
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; " +
-      `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${clerkScriptSources.join(' ')} https://vercel.live; ` +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https: blob:; " +
-      `connect-src 'self' ${clerkConnectSources.join(' ')} https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io ws://localhost:* http://localhost:* ws://127.0.0.1:* http://127.0.0.1:*; ` +
-      `frame-src 'self' ${clerkFrameSources.join(' ')} https://vercel.live; ` +
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io ws://localhost:* http://localhost:* ws://127.0.0.1:* http://127.0.0.1:*; " +
+      "frame-src 'self' https://vercel.live; " +
       "worker-src 'self' blob:; " +
       "frame-ancestors 'none'; " +
       "base-uri 'self'; " +

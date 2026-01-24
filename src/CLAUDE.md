@@ -174,9 +174,10 @@ try {
 
 ### Authentication & Authorization
 
-- All routes protected by Clerk middleware
+- All routes protected by Supabase Auth middleware
 - Role-based access control (RBAC)
 - Organization-scoped data access
+- Row-Level Security (RLS) enforced at database level
 - API key encryption at rest
 
 ### Data Protection

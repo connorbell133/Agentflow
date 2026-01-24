@@ -193,7 +193,7 @@ Build LangChain agent → Deploy to Cloud Run → Connect to AgentFlow → Profe
 | Guide                                                        | Time   | Description                |
 | ------------------------------------------------------------ | ------ | -------------------------- |
 | [Installation](./docs/getting-started/INSTALLATION.md)       | 30 min | Complete setup walkthrough |
-| [Authentication Setup](./docs/getting-started/AUTH_SETUP.md) | 15 min | Configure Better-Auth      |
+| [Supabase Auth Setup](./docs/SUPABASE_AUTH_SETUP.md)         | 15 min | Configure authentication   |
 | [First Endpoint](./docs/getting-started/FIRST_ENDPOINT.md)   | 15 min | Connect your first AI      |
 | [Troubleshooting](./docs/getting-started/TROUBLESHOOTING.md) | -      | Common issues and fixes    |
 
