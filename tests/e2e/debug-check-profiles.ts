@@ -10,7 +10,7 @@ import { createSupabaseServerClient } from './utils/supabase-test-client';
 
 async function checkProfiles() {
   const supabase = await createSupabaseServerClient();
-  const email = 'connor.n.bell.work@gmail.com';
+  const email = process.env.TEST_ADMIN_EMAIL || 'admin.test@example.com';
 
   console.log(`\n🔍 Checking profiles for: ${email}\n`);
 

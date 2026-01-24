@@ -4,6 +4,13 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/auth/supabase-client';
+import { AuthLayout } from '@/components/features/auth/AuthLayout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { AlertCircle } from 'lucide-react';
 
 export default function SignInPage() {
   const router = useRouter();
@@ -14,6 +21,7 @@ export default function SignInPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,126 +50,99 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-12 dark:from-gray-900 dark:to-gray-800">
-      <div className="w-full max-w-md">
-        <div className="rounded-2xl bg-white p-8 shadow-xl dark:bg-gray-800">
-          {/* Logo/Header */}
-          <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome Back</h1>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              Sign in to your AgentFlow account
-            </p>
-          </div>
-
+    <AuthLayout>
+      <Card className="border-border">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
+          <CardDescription>Sign in to your AgentFlow account</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
           {/* Error Message */}
           {error && (
-            <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-400">
-              {error}
+            <div className="border-destructive/50 bg-destructive/10 flex items-start gap-2 rounded-lg border p-4 text-sm text-destructive">
+              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <p>{error}</p>
             </div>
           )}
 
           {/* Sign In Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Email Address
-              </label>
-              <input
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
                 placeholder="you@example.com"
                 data-testid="sign-in-email-input"
               />
             </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Password
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
                 placeholder="••••••••"
                 data-testid="sign-in-password-input"
               />
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
+              <div className="flex items-center space-x-2">
+                <Checkbox
                   id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
+                  checked={rememberMe}
+                  onCheckedChange={checked => setRememberMe(checked === true)}
                 />
-                <label
-                  htmlFor="remember-me"
-                  className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
-                >
+                <Label htmlFor="remember-me" className="cursor-pointer text-sm font-normal">
                   Remember me
-                </label>
+                </Label>
               </div>
 
-              <div className="text-sm">
-                <Link
-                  href="/forgot-password"
-                  className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
-                >
-                  Forgot password?
-                </Link>
-              </div>
+              <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                Forgot password?
+              </Link>
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+              className="w-full"
               data-testid="sign-in-submit-button"
             >
               {loading ? 'Signing in...' : 'Sign In'}
-            </button>
+            </Button>
           </form>
 
           {/* Sign Up Link */}
-          <div className="mt-6 text-center text-sm">
-            <span className="text-gray-600 dark:text-gray-400">Don&apos;t have an account? </span>
-            <Link
-              href="/sign-up"
-              className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
-            >
+          <div className="text-center text-sm">
+            <span className="text-muted-foreground">Don&apos;t have an account? </span>
+            <Link href="/sign-up" className="font-medium text-primary hover:underline">
               Sign up
             </Link>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Footer */}
-        <p className="mt-8 text-center text-xs text-gray-500 dark:text-gray-400">
-          By signing in, you agree to our{' '}
-          <Link href="/terms" className="underline hover:text-gray-700">
-            Terms of Service
-          </Link>{' '}
-          and{' '}
-          <Link href="/privacy" className="underline hover:text-gray-700">
-            Privacy Policy
-          </Link>
-        </p>
-      </div>
-    </div>
+      {/* Footer */}
+      <p className="mt-8 text-center text-xs text-muted-foreground">
+        By signing in, you agree to our{' '}
+        <Link href="/terms" className="underline hover:text-foreground">
+          Terms of Service
+        </Link>{' '}
+        and{' '}
+        <Link href="/privacy" className="underline hover:text-foreground">
+          Privacy Policy
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }
