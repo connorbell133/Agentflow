@@ -97,7 +97,7 @@ export default function TemplateSelectionStep({
       }
 
       onTemplateSelect(template.id);
-      updateState({ templateMode: 'preset', selectedTemplateId: template.id });
+      updateState({ templateMode: 'template', selectedTemplateId: template.id });
     },
     [state.selectedTemplateId, onTemplateSelect, updateState]
   );
