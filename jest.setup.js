@@ -102,49 +102,117 @@ jest.mock('next/navigation', () => ({
   },
 }));
 
-// Mock Better-Auth
-jest.mock('@/lib/auth/better-auth-client', () => ({
-  useSession: jest.fn(() => ({
-    data: {
-      user: {
-        id: 'test-user-id',
-        email: 'test@example.com',
-        name: 'Test User',
-      },
-      session: {
-        id: 'test-session-id',
-      },
+// Mock Supabase Auth Client
+jest.mock('@/lib/auth/supabase-client', () => ({
+  createClient: jest.fn(() => ({
+    auth: {
+      getUser: jest.fn().mockResolvedValue({
+        data: {
+          user: {
+            id: 'test-user-id',
+            email: 'test@example.com',
+            user_metadata: {
+              org_id: 'test-org-id',
+              role: 'user',
+            },
+          },
+        },
+        error: null,
+      }),
+      getSession: jest.fn().mockResolvedValue({
+        data: {
+          session: {
+            access_token: 'test-token',
+            user: {
+              id: 'test-user-id',
+              email: 'test@example.com',
+            },
+          },
+        },
+        error: null,
+      }),
+      signInWithPassword: jest.fn().mockResolvedValue({
+        data: {
+          user: {
+            id: 'test-user-id',
+            email: 'test@example.com',
+          },
+          session: {
+            access_token: 'test-token',
+          },
+        },
+        error: null,
+      }),
+      signUp: jest.fn().mockResolvedValue({
+        data: {
+          user: {
+            id: 'test-user-id',
+            email: 'test@example.com',
+          },
+          session: null,
+        },
+        error: null,
+      }),
+      signOut: jest.fn().mockResolvedValue({
+        error: null,
+      }),
+      onAuthStateChange: jest.fn(() => ({
+        data: {
+          subscription: {
+            unsubscribe: jest.fn(),
+          },
+        },
+      })),
     },
-    isPending: false,
+    from: jest.fn(() => ({
+      select: jest.fn().mockReturnThis(),
+      insert: jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
+      delete: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    })),
   })),
-  signIn: {
-    email: jest.fn(),
-  },
-  signUp: {
-    email: jest.fn(),
-  },
-  signOut: jest.fn(),
 }));
 
+// Mock Supabase Auth Server
 jest.mock('@/lib/auth/server', () => ({
   auth: jest.fn(() =>
     Promise.resolve({
       userId: 'test-user-id',
+      user: {
+        id: 'test-user-id',
+        email: 'test@example.com',
+        user_metadata: {
+          org_id: 'test-org-id',
+          role: 'user',
+        },
+      },
       org_id: 'test-org-id',
+      role: 'user',
     })
   ),
-  currentUser: jest.fn(() =>
+  requireAuth: jest.fn(() =>
     Promise.resolve({
-      id: 'test-user-id',
-      email: 'test@example.com',
-      name: 'Test User',
+      userId: 'test-user-id',
+      user: {
+        id: 'test-user-id',
+        email: 'test@example.com',
+        user_metadata: {
+          org_id: 'test-org-id',
+          role: 'user',
+        },
+      },
+      org_id: 'test-org-id',
+      role: 'user',
     })
   ),
 }));
 
 // Mock environment variables
 process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
-process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
+// secretlint-disable-next-line
+process.env.DATABASE_URL = 'postgresql://example_user:example_pass@example.com:5432/example_db';
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
 

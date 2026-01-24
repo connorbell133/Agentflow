@@ -23,8 +23,11 @@ describe('getTenantContext', () => {
   it('should return tenant context when user is authenticated', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      orgId: 'org-456',
-      sessionId: 'session-789',
+      org_id: 'org-456',
+      user: {
+        id: 'user-123',
+        user_metadata: { org_id: 'org-456' },
+      },
     } as any);
 
     const context = await getTenantContext();
@@ -32,15 +35,14 @@ describe('getTenantContext', () => {
     expect(context).toEqual({
       userId: 'user-123',
       org_id: 'org-456',
-      sessionId: 'session-789',
     });
   });
 
   it('should throw TenantContextError when user is not authenticated', async () => {
     mockAuth.mockResolvedValue({
       userId: null,
-      orgId: null,
-      sessionId: null,
+      org_id: null,
+      user: null,
     } as any);
 
     await expect(getTenantContext()).rejects.toThrow(TenantContextError);
@@ -50,8 +52,11 @@ describe('getTenantContext', () => {
   it('should allow null org_id for users not in an organization', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      orgId: null,
-      sessionId: 'session-789',
+      org_id: null,
+      user: {
+        id: 'user-123',
+        user_metadata: {},
+      },
     } as any);
 
     const context = await getTenantContext();
@@ -65,8 +70,11 @@ describe('getOrgTenantContext', () => {
   it('should return context when user is in an organization', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      orgId: 'org-456',
-      sessionId: 'session-789',
+      org_id: 'org-456',
+      user: {
+        id: 'user-123',
+        user_metadata: { org_id: 'org-456' },
+      },
     } as any);
 
     const context = await getOrgTenantContext();
@@ -74,15 +82,17 @@ describe('getOrgTenantContext', () => {
     expect(context).toEqual({
       userId: 'user-123',
       org_id: 'org-456',
-      sessionId: 'session-789',
     });
   });
 
   it('should throw error when user is not in an organization', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      orgId: null,
-      sessionId: 'session-789',
+      org_id: null,
+      user: {
+        id: 'user-123',
+        user_metadata: {},
+      },
     } as any);
 
     await expect(getOrgTenantContext()).rejects.toThrow(TenantContextError);
@@ -92,8 +102,8 @@ describe('getOrgTenantContext', () => {
   it('should throw error when user is not authenticated', async () => {
     mockAuth.mockResolvedValue({
       userId: null,
-      orgId: null,
-      sessionId: null,
+      org_id: null,
+      user: null,
     } as any);
 
     await expect(getOrgTenantContext()).rejects.toThrow(TenantContextError);
@@ -104,8 +114,11 @@ describe('tryGetTenantContext', () => {
   it('should return context when authenticated', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      orgId: 'org-456',
-      sessionId: 'session-789',
+      org_id: 'org-456',
+      user: {
+        id: 'user-123',
+        user_metadata: { org_id: 'org-456' },
+      },
     } as any);
 
     const context = await tryGetTenantContext();
@@ -113,15 +126,14 @@ describe('tryGetTenantContext', () => {
     expect(context).toEqual({
       userId: 'user-123',
       org_id: 'org-456',
-      sessionId: 'session-789',
     });
   });
 
   it('should return null when not authenticated', async () => {
     mockAuth.mockResolvedValue({
       userId: null,
-      orgId: null,
-      sessionId: null,
+      org_id: null,
+      user: null,
     } as any);
 
     const context = await tryGetTenantContext();
@@ -140,8 +152,11 @@ describe('hasOrgAccess', () => {
   it('should return true when user is in the target organization', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      orgId: 'org-456',
-      sessionId: 'session-789',
+      org_id: 'org-456',
+      user: {
+        id: 'user-123',
+        user_metadata: { org_id: 'org-456' },
+      },
     } as any);
 
     const hasAccess = await hasOrgAccess('org-456');
@@ -152,8 +167,11 @@ describe('hasOrgAccess', () => {
   it('should return false when user is in a different organization', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      orgId: 'org-456',
-      sessionId: 'session-789',
+      org_id: 'org-456',
+      user: {
+        id: 'user-123',
+        user_metadata: { org_id: 'org-456' },
+      },
     } as any);
 
     const hasAccess = await hasOrgAccess('org-999');
@@ -164,8 +182,8 @@ describe('hasOrgAccess', () => {
   it('should return false when user is not authenticated', async () => {
     mockAuth.mockResolvedValue({
       userId: null,
-      orgId: null,
-      sessionId: null,
+      org_id: null,
+      user: null,
     } as any);
 
     const hasAccess = await hasOrgAccess('org-456');
@@ -176,8 +194,11 @@ describe('hasOrgAccess', () => {
   it('should return false when user is not in any organization', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      orgId: null,
-      sessionId: 'session-789',
+      org_id: null,
+      user: {
+        id: 'user-123',
+        user_metadata: {},
+      },
     } as any);
 
     const hasAccess = await hasOrgAccess('org-456');
@@ -190,8 +211,11 @@ describe('assertOrgAccess', () => {
   it('should not throw when user has access', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      orgId: 'org-456',
-      sessionId: 'session-789',
+      org_id: 'org-456',
+      user: {
+        id: 'user-123',
+        user_metadata: { org_id: 'org-456' },
+      },
     } as any);
 
     await expect(assertOrgAccess('org-456')).resolves.not.toThrow();
@@ -200,8 +224,11 @@ describe('assertOrgAccess', () => {
   it('should throw when user does not have access', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      orgId: 'org-456',
-      sessionId: 'session-789',
+      org_id: 'org-456',
+      user: {
+        id: 'user-123',
+        user_metadata: { org_id: 'org-456' },
+      },
     } as any);
 
     await expect(assertOrgAccess('org-999')).rejects.toThrow(TenantContextError);
@@ -213,8 +240,8 @@ describe('assertOrgAccess', () => {
   it('should throw when user is not authenticated', async () => {
     mockAuth.mockResolvedValue({
       userId: null,
-      orgId: null,
-      sessionId: null,
+      org_id: null,
+      user: null,
     } as any);
 
     await expect(assertOrgAccess('org-456')).rejects.toThrow(TenantContextError);
@@ -242,8 +269,11 @@ describe('Security Edge Cases', () => {
   it('should handle undefined userId gracefully', async () => {
     mockAuth.mockResolvedValue({
       userId: undefined,
-      orgId: 'org-456',
-      sessionId: 'session-789',
+      org_id: 'org-456',
+      user: {
+        id: undefined,
+        user_metadata: { org_id: 'org-456' },
+      },
     } as any);
 
     await expect(getTenantContext()).rejects.toThrow(TenantContextError);
@@ -252,23 +282,29 @@ describe('Security Edge Cases', () => {
   it('should handle empty string userId as invalid', async () => {
     mockAuth.mockResolvedValue({
       userId: '',
-      orgId: 'org-456',
-      sessionId: 'session-789',
+      org_id: 'org-456',
+      user: {
+        id: '',
+        user_metadata: { org_id: 'org-456' },
+      },
     } as any);
 
     await expect(getTenantContext()).rejects.toThrow(TenantContextError);
   });
 
-  it('should allow sessions without sessionId', async () => {
+  it('should allow users without org_id', async () => {
     mockAuth.mockResolvedValue({
       userId: 'user-123',
-      orgId: 'org-456',
-      sessionId: null,
+      org_id: null,
+      user: {
+        id: 'user-123',
+        user_metadata: {},
+      },
     } as any);
 
     const context = await getTenantContext();
 
     expect(context.userId).toBe('user-123');
-    expect(context.sessionId).toBeNull();
+    expect(context.org_id).toBeNull();
   });
 });
