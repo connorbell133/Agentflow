@@ -1,6 +1,6 @@
 {
-  "name": "chat_platform",
-  "description": "AI Chat Platform with Admin Dashboard",
+  "name": "agentflow",
+  "description": "AgentFlow - AI Chat Management System",
   "version": "0.1.0",
   "private": true,
   "type": "module",

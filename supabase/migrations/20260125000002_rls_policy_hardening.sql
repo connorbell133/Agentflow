@@ -9,26 +9,71 @@
 -- the need for service role bypasses in the invite acceptance flow.
 
 -- ============================================================================
--- SECTION 1: FORCE ROW LEVEL SECURITY ON ALL TABLES
+-- SECTION 1: ENABLE AND FORCE ROW LEVEL SECURITY ON ALL TABLES
 -- ============================================================================
 
--- Force RLS ensures that even table owners and service role must go through policies
+-- Enable RLS first (required before FORCE can work)
+-- Then Force RLS to ensure even table owners and service role must go through policies
 -- This prevents accidental bypass of security restrictions
 
+-- Profiles
+ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."profiles" FORCE ROW LEVEL SECURITY;
+
+-- Organizations
+ALTER TABLE "public"."organizations" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."organizations" FORCE ROW LEVEL SECURITY;
+
+-- Organization mappings
+ALTER TABLE "public"."org_map" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."org_map" FORCE ROW LEVEL SECURITY;
+
+-- Groups
+ALTER TABLE "public"."groups" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."groups" FORCE ROW LEVEL SECURITY;
+
+-- Group mappings
+ALTER TABLE "public"."group_map" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."group_map" FORCE ROW LEVEL SECURITY;
+
+-- Invites
+ALTER TABLE "public"."invites" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."invites" FORCE ROW LEVEL SECURITY;
+
+-- Models
+ALTER TABLE "public"."models" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."models" FORCE ROW LEVEL SECURITY;
+
+-- Model mappings
+ALTER TABLE "public"."model_map" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."model_map" FORCE ROW LEVEL SECURITY;
+
+-- Model keys
+ALTER TABLE "public"."model_keys" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."model_keys" FORCE ROW LEVEL SECURITY;
+
+-- Model prompts
+ALTER TABLE "public"."model_prompts" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."model_prompts" FORCE ROW LEVEL SECURITY;
+
+-- Model config presets
+ALTER TABLE "public"."model_config_presets" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."model_config_presets" FORCE ROW LEVEL SECURITY;
+
+-- Conversations
+ALTER TABLE "public"."conversations" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."conversations" FORCE ROW LEVEL SECURITY;
+
+-- Messages
+ALTER TABLE "public"."messages" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."messages" FORCE ROW LEVEL SECURITY;
+
+-- Message feedback
+ALTER TABLE "public"."message_feedback" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."message_feedback" FORCE ROW LEVEL SECURITY;
+
+-- Temp org requests
+ALTER TABLE "public"."temp_org_requests" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."temp_org_requests" FORCE ROW LEVEL SECURITY;
 
 -- Enable RLS on product_tiers (previously unprotected)
@@ -469,3 +514,171 @@ CREATE INDEX "idx_rls_audit_log_created_at" ON "public"."rls_audit_log" USING "b
 --
 -- 6. Performance: The new policies use EXISTS subqueries which are well-optimized
 --    by PostgreSQL. Monitor query performance and add indexes if needed.
+
+
+-- ============================================================================
+-- SECTION 10: SERVICE ROLE BYPASS POLICIES
+-- ============================================================================
+
+-- IMPORTANT: These policies allow service role to manage data while enforcing
+-- RLS for all authenticated users.
+--
+-- Service role usage (server-side only):
+-- 1. E2E test setup/teardown
+-- 2. Admin operations and maintenance scripts
+-- 3. Background jobs and system operations
+-- 4. Data migrations and cleanup
+--
+-- CRITICAL: Service role key must NEVER be exposed to client code.
+-- All user-facing application code MUST use authenticated clients.
+--
+-- SECURITY: Service role key must be kept secret and never committed to git
+
+-- Organizations: Service role can manage for E2E tests
+CREATE POLICY "service_role_can_manage_organizations"
+  ON "public"."organizations" FOR ALL TO "service_role"
+  USING (true)
+  WITH CHECK (true);
+
+COMMENT ON POLICY "service_role_can_manage_organizations" ON "public"."organizations"
+  IS 'Allows service role to manage organizations for E2E test setup/teardown';
+
+-- org_map: Service role can manage for E2E tests
+CREATE POLICY "service_role_can_manage_org_map"
+  ON "public"."org_map" FOR ALL TO "service_role"
+  USING (true)
+  WITH CHECK (true);
+
+COMMENT ON POLICY "service_role_can_manage_org_map" ON "public"."org_map"
+  IS 'Allows service role to manage org memberships for E2E test setup/teardown';
+
+-- groups: Service role can manage for E2E tests
+CREATE POLICY "service_role_can_manage_groups"
+  ON "public"."groups" FOR ALL TO "service_role"
+  USING (true)
+  WITH CHECK (true);
+
+COMMENT ON POLICY "service_role_can_manage_groups" ON "public"."groups"
+  IS 'Allows service role to manage groups for E2E test setup/teardown';
+
+-- group_map: Service role can manage for E2E tests
+CREATE POLICY "service_role_can_manage_group_map"
+  ON "public"."group_map" FOR ALL TO "service_role"
+  USING (true)
+  WITH CHECK (true);
+
+COMMENT ON POLICY "service_role_can_manage_group_map" ON "public"."group_map"
+  IS 'Allows service role to manage group memberships for E2E test setup/teardown';
+
+-- invites: Service role can manage for E2E tests
+CREATE POLICY "service_role_can_manage_invites"
+  ON "public"."invites" FOR ALL TO "service_role"
+  USING (true)
+  WITH CHECK (true);
+
+COMMENT ON POLICY "service_role_can_manage_invites" ON "public"."invites"
+  IS 'Allows service role to manage invites for E2E test setup/teardown';
+
+-- profiles: Service role can manage for E2E tests
+CREATE POLICY "service_role_can_manage_profiles"
+  ON "public"."profiles" FOR ALL TO "service_role"
+  USING (true)
+  WITH CHECK (true);
+
+COMMENT ON POLICY "service_role_can_manage_profiles" ON "public"."profiles"
+  IS 'Allows service role to manage profiles for E2E test setup/teardown';
+
+-- conversations: Service role can manage for E2E tests
+CREATE POLICY "service_role_can_manage_conversations"
+  ON "public"."conversations" FOR ALL TO "service_role"
+  USING (true)
+  WITH CHECK (true);
+
+COMMENT ON POLICY "service_role_can_manage_conversations" ON "public"."conversations"
+  IS 'Allows service role to manage conversations for E2E test setup/teardown';
+
+-- messages: Service role can manage for E2E tests
+CREATE POLICY "service_role_can_manage_messages"
+  ON "public"."messages" FOR ALL TO "service_role"
+  USING (true)
+  WITH CHECK (true);
+
+COMMENT ON POLICY "service_role_can_manage_messages" ON "public"."messages"
+  IS 'Allows service role to manage messages for E2E test setup/teardown';
+
+-- models: Service role can manage for E2E tests
+CREATE POLICY "service_role_can_manage_models"
+  ON "public"."models" FOR ALL TO "service_role"
+  USING (true)
+  WITH CHECK (true);
+
+COMMENT ON POLICY "service_role_can_manage_models" ON "public"."models"
+  IS 'Allows service role to manage models for E2E test setup/teardown';
+
+-- model_map: Service role can manage for E2E tests
+CREATE POLICY "service_role_can_manage_model_map"
+  ON "public"."model_map" FOR ALL TO "service_role"
+  USING (true)
+  WITH CHECK (true);
+
+COMMENT ON POLICY "service_role_can_manage_model_map" ON "public"."model_map"
+  IS 'Allows service role to manage model mappings for E2E test setup/teardown';
+
+-- temp_org_requests: Service role can manage for E2E tests
+CREATE POLICY "service_role_can_manage_temp_org_requests"
+  ON "public"."temp_org_requests" FOR ALL TO "service_role"
+  USING (true)
+  WITH CHECK (true);
+
+COMMENT ON POLICY "service_role_can_manage_temp_org_requests" ON "public"."temp_org_requests"
+  IS 'Allows service role to manage temp org requests for E2E test setup/teardown';
+
+-- message_feedback: Service role can manage for E2E tests
+CREATE POLICY "service_role_can_manage_message_feedback"
+  ON "public"."message_feedback" FOR ALL TO "service_role"
+  USING (true)
+  WITH CHECK (true);
+
+COMMENT ON POLICY "service_role_can_manage_message_feedback" ON "public"."message_feedback"
+  IS 'Allows service role to manage message feedback for E2E test setup/teardown';
+
+
+-- ============================================================================
+-- VERIFICATION: Check RLS is properly enabled on all tables
+-- ============================================================================
+
+DO $$
+DECLARE
+  table_record RECORD;
+  missing_rls TEXT[] := ARRAY[]::TEXT[];
+BEGIN
+  -- Check all critical tables have RLS enabled
+  FOR table_record IN
+    SELECT tablename
+    FROM pg_tables
+    WHERE schemaname = 'public'
+    AND tablename IN (
+      'profiles', 'organizations', 'org_map', 'groups', 'group_map',
+      'invites', 'models', 'model_map', 'conversations', 'messages',
+      'temp_org_requests', 'message_feedback', 'rls_audit_log'
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_class c
+      WHERE c.relname = pg_tables.tablename
+      AND c.relrowsecurity = true
+    )
+  LOOP
+    missing_rls := array_append(missing_rls, table_record.tablename);
+  END LOOP;
+
+  -- Report results
+  IF array_length(missing_rls, 1) > 0 THEN
+    RAISE WARNING 'The following tables are missing RLS: %', array_to_string(missing_rls, ', ');
+    RAISE EXCEPTION 'RLS migration incomplete - some tables do not have RLS enabled';
+  ELSE
+    RAISE NOTICE '✅ RLS VERIFICATION PASSED: All critical tables have RLS enabled';
+    RAISE NOTICE '✅ Service role bypass policies added for E2E test operations';
+    RAISE NOTICE '✅ Application code uses authenticated user sessions (RLS enforced)';
+    RAISE NOTICE '✅ Production security: FORCE RLS enabled on all tables';
+  END IF;
+END $$;

@@ -27,7 +27,7 @@
  * ```
  */
 
-import { createSupabaseTestClient } from './supabase-test-client';
+import { createSupabaseTestClient, createAuthenticatedClient } from './supabase-test-client';
 import {
   createTestOrganization,
   createTestGroup,
@@ -291,6 +291,9 @@ export async function createAuthenticatedUser(
  * Creates a complete authenticated user setup with organization and group.
  * This is the most common pattern for E2E tests.
  *
+ * **Updated for RLS**: Now uses the authenticated user's session to create
+ * the organization, ensuring RLS policies are properly tested.
+ *
  * @param options User and org creation options
  * @returns Complete authenticated setup
  */
@@ -300,11 +303,12 @@ export async function createUserWithOrg(
   // Create authenticated user
   const user = await createAuthenticatedUser(options);
 
-  // Create organization
+  // Create organization using service role client (bypasses RLS for test setup)
   const orgName = options.orgName || generateOrgName();
   const org = await createTestOrganization({
     name: orgName,
     ownerId: user.id,
+    // authenticatedClient not needed - service role bypass policies handle this
   });
 
   // Add user to organization

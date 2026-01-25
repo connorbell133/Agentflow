@@ -1,4 +1,4 @@
-# Chat Platform Source Code
+# Agentflow Source Code
 
 Enterprise AI chat management platform built with Next.js 14, TypeScript, and PostgreSQL.
 
@@ -9,7 +9,7 @@ See @../package.json for available scripts and dependencies
 
 ### Core Directories
 
-See @app/CLAUDE.md for Next.js app router structure  
+See @app/CLAUDE.md for Next.js app router structure
 See @components/CLAUDE.md for React component library
 See @db/CLAUDE.md for database schema and ORM
 See @actions/CLAUDE.md for server-side mutations
