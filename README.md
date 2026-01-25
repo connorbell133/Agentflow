@@ -10,6 +10,10 @@
 
 [☁️ Fully Hosted Platform](https://app.agentflow.live) · [🏠 Website](https://agentflow.live) · [🚀 Self-Host Guide](#-quick-start) · [📖 Documentation](#-documentation) · [💬 Discussions](https://github.com/your-org/chat-platform/discussions) · [🐛 Issues](https://github.com/your-org/chat-platform/issues)
 
+<p align="center">
+  <img src="./docs/images/architecture.png" alt="AgentFlow Architecture" width="100%">
+</p>
+
 ---
 
 > **💡 New to AgentFlow?**
@@ -141,6 +145,16 @@ Complete separation. Row-Level Security enforced at database level.
 ```
 
 → [Multi-Tenant Guide](./docs/guides/MULTI_TENANT.md)
+
+---
+
+## 📊 Admin Dashboard
+
+Track usage, manage users, and monitor conversations across your organization.
+
+<p align="center">
+  <img src="./docs/images/dashboard.png" alt="AgentFlow Admin Dashboard" width="100%">
+</p>
 
 ---
 
