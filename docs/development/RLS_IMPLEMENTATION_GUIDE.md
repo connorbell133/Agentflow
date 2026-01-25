@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Chat Platform implements a comprehensive Row-Level Security (RLS) system that provides centralized, database-agnostic authorization for all database operations. This system ensures proper tenant isolation, prevents unauthorized data access, and maintains enterprise-grade security standards.
+Agentflow implements a comprehensive Row-Level Security (RLS) system that provides centralized, database-agnostic authorization for all database operations. This system ensures proper tenant isolation, prevents unauthorized data access, and maintains enterprise-grade security standards.
 
 ## Architecture
 
@@ -42,15 +42,15 @@ src/middleware/rls/
 
 ### Critical Tables Protected
 
-| Table | Security Level | Description |
-|-------|---------------|-------------|
-| **conversations** | HIGH | Prevents cross-user data leakage |
-| **messages** | HIGH | Immutable, conversation-scoped access |
-| **organizations** | HIGH | Multi-tenant isolation |
-| **profiles** | MEDIUM | User data protection |
-| **groups** | MEDIUM | Permission group management |
-| **models** | MEDIUM | AI model access control |
-| **invites** | MEDIUM | Invitation access control |
+| Table             | Security Level | Description                           |
+| ----------------- | -------------- | ------------------------------------- |
+| **conversations** | HIGH           | Prevents cross-user data leakage      |
+| **messages**      | HIGH           | Immutable, conversation-scoped access |
+| **organizations** | HIGH           | Multi-tenant isolation                |
+| **profiles**      | MEDIUM         | User data protection                  |
+| **groups**        | MEDIUM         | Permission group management           |
+| **models**        | MEDIUM         | AI model access control               |
+| **invites**       | MEDIUM         | Invitation access control             |
 
 ### Access Patterns
 
@@ -73,10 +73,10 @@ export const GET = withRLS(
   {
     tableName: 'conversations',
     action: Action.LIST,
-    getResource: async (req) => {
+    getResource: async req => {
       const { searchParams } = new URL(req.url);
       return { org_id: searchParams.get('org_id') };
-    }
+    },
   },
   async (req: NextRequest) => {
     const rlsQuery = await getRLSQuery('conversations');
@@ -88,7 +88,7 @@ export const GET = withRLS(
 // Option 2: Manual RLS check
 export async function GET(req: NextRequest) {
   const rlsQuery = await getRLSQuery('conversations');
-  
+
   try {
     const data = await rlsQuery.findMany(conversations);
     return NextResponse.json({ data });
@@ -158,10 +158,7 @@ function ConversationList() {
 // ❌ INSECURE: Direct database access
 import { db } from '@/db/connection';
 
-const data = await db
-  .select()
-  .from(conversations)
-  .where(eq(conversations.org_id, org_id)); // Manual filtering - can be bypassed
+const data = await db.select().from(conversations).where(eq(conversations.org_id, org_id)); // Manual filtering - can be bypassed
 ```
 
 ### After RLS Implementation
@@ -174,12 +171,10 @@ export const GET = withRLS(
   { tableName: 'conversations', action: Action.LIST },
   async (req: NextRequest) => {
     const rlsQuery = await getRLSQuery('conversations');
-    
+
     // RLS automatically applies tenant filters
     // Cannot access other org's data even if org_id is manipulated
-    const data = await rlsQuery.db
-      .select()
-      .from(conversations);
+    const data = await rlsQuery.db.select().from(conversations);
 
     return NextResponse.json({ data });
   }
@@ -189,6 +184,7 @@ export const GET = withRLS(
 ### Migration Checklist
 
 For each API route:
+
 - [ ] Remove `import { db } from '@/db/connection'`
 - [ ] Add `import { withRLS, getRLSQuery } from '@/middleware/rls'`
 - [ ] Identify the table name and action type
@@ -203,18 +199,21 @@ For each API route:
 ### Critical Test Cases
 
 1. **Cross-Org Access Prevention**
+
    ```typescript
    // User from Org A trying to access Org B's conversation
    // Should return 403 Forbidden
    ```
 
 2. **Admin Role Verification**
+
    ```typescript
    // Non-admin trying to access admin analytics
    // Should return 403 Forbidden
    ```
 
 3. **Invite Hijacking Prevention**
+
    ```typescript
    // User trying to accept invite meant for someone else
    // Should return 403 Forbidden
@@ -244,26 +243,31 @@ npm test src/actions/chat/conversations
 ## Security Benefits
 
 ### 1. Centralized Authorization
+
 - All access control logic in one place
 - No more scattered permission checks
 - Consistent security across the application
 
 ### 2. Prevents Cross-Tenant Data Leaks
+
 - Admin from Org A cannot access Org B's data
 - Automatic filtering based on user context
 - Impossible to bypass with URL manipulation
 
 ### 3. Automatic Audit Logging
+
 - All RLS violations are logged
 - Complete audit trail of access attempts
 - Compliance-ready
 
 ### 4. Performance Optimized
+
 - Built-in permission caching
 - Reduces database queries
 - Maintains existing cache strategies
 
 ### 5. Developer Experience
+
 - Simpler code - less boilerplate
 - TypeScript type safety maintained
 - Clear error messages
@@ -298,6 +302,7 @@ DEBUG=RLS:* npm run dev
 ```
 
 This will show detailed logs of:
+
 - Rule evaluation process
 - Cache hits/misses
 - Authorization decisions
@@ -332,5 +337,5 @@ For questions or issues with RLS implementation:
 
 ---
 
-*Last Updated: January 2025*
-*Version: 1.0*
+_Last Updated: January 2025_
+_Version: 1.0_

@@ -30,6 +30,7 @@
     "supabase/migrations/_archive/**",
     "seed.ts",
     "src/db/seed.ts",
-    "tools/scripts/seed-conversations.ts"
+    "tools/scripts/seed-conversations.ts",
+    "tests/**/*"
   ]
 }

@@ -1,53 +1,17 @@
 'use server';
 
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 import { canInviteUsers } from '@/lib/auth/subscription';
 
 export async function getUserInvites(userEmail: string) {
-  console.log('[getUserInvites] 🔍 Called with email:', userEmail);
-  console.log('[getUserInvites] 🔑 Using SERVICE ROLE to bypass RLS');
-
-  // Use service role to bypass RLS for invite queries
-  // Rationale: Invites should be visible to the invitee regardless of org membership
-  // This fixes the issue where newly signed-up users can't see their pending invites
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-  console.log('[getUserInvites] 📍 Supabase URL:', supabaseUrl);
-  console.log('[getUserInvites] 🔐 Service key exists:', !!supabaseKey);
-  console.log('[getUserInvites] 🔐 Service key length:', supabaseKey?.length || 0);
-
-  const supabase = await createClient(supabaseUrl, supabaseKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-
-  console.log('[getUserInvites] ✅ Created service role client');
+  // Use user context client - RLS policy allows users to see invites sent to their email
+  const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase.from('invites').select('*').eq('invitee', userEmail);
 
-  console.log('[getUserInvites] 📊 Query result - Count:', data?.length || 0);
-  console.log('[getUserInvites] 📊 Query result - Error:', error?.message || 'none');
-
-  if (data && data.length > 0) {
-    console.log(
-      '[getUserInvites] ✅ Found invites:',
-      data.map(i => ({
-        id: i.id,
-        org_id: i.org_id,
-        group_id: i.group_id,
-      }))
-    );
-  } else {
-    console.log('[getUserInvites] ⚠️  No invites found for:', userEmail);
-  }
-
   if (error) {
-    console.error('[getUserInvites] ❌ Error fetching user invites:', error);
+    console.error('Error fetching user invites:', error);
     return [];
   }
 
@@ -55,18 +19,8 @@ export async function getUserInvites(userEmail: string) {
 }
 
 export async function getInviteGroup(groupId: string, inviteOrg: string) {
-  // Use service role to bypass RLS for invite group queries
-  // Rationale: Users need to see group details in pending invites before joining
-  const supabase = await createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }
-  );
+  // Use user context client - RLS policy allows users to see groups they're invited to
+  const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase
     .from('groups')
@@ -77,13 +31,15 @@ export async function getInviteGroup(groupId: string, inviteOrg: string) {
 
   if (error) {
     if (error.code === 'PGRST116') {
-      throw new Error('Group not found');
+      // Group not found or user doesn't have permission to view it yet
+      // Return empty array to be consistent with getInviteOrg and getInviteInviter
+      return [];
     }
     console.error('Error fetching invite group:', error);
-    throw new Error('Failed to fetch group');
+    return [];
   }
 
-  return [data];
+  return data ? [data] : [];
 }
 
 export async function getInviteOrg(org_id: string) {
@@ -280,32 +236,33 @@ export async function addInvite(invitee: string, org_id: string, groupId: string
 }
 
 export async function acceptInviteAction(inviteId: string, userId: string) {
-  // Use service role client to bypass RLS for reading the invite
-  // Rationale: User doesn't have org membership yet, so can't read invite via RLS
-  const serviceSupabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }
-  );
+  // Use user context client - RLS policies now handle all validation
+  const supabase = await createSupabaseServerClient();
 
-  // 1. Verify invite exists using service role
-  const { data: invite, error: inviteError } = await serviceSupabase
+  // 1. Verify invite exists and is for this user (RLS policy allows users to see their own invites)
+  const { data: invite, error: inviteError } = await supabase
     .from('invites')
     .select('*')
     .eq('id', inviteId)
     .single();
 
   if (inviteError || !invite) {
-    throw new Error('Invite not found');
+    throw new Error('Invite not found or not authorized');
   }
 
-  // 2. Add to Org - Check if already in org (use service role since user can't read org_map yet)
-  const { data: existingOrgMap, error: orgMapCheckError } = await serviceSupabase
+  // 2. Verify the user profile email matches the invite
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('email')
+    .eq('id', userId)
+    .single();
+
+  if (profileError || !profile || profile.email !== invite.invitee) {
+    throw new Error('Invite does not match your email address');
+  }
+
+  // 3. Add to Org - Check if already in org
+  const { data: existingOrgMap, error: orgMapCheckError } = await supabase
     .from('org_map')
     .select('id')
     .eq('org_id', invite.org_id)
@@ -319,7 +276,8 @@ export async function acceptInviteAction(inviteId: string, userId: string) {
   }
 
   if (!existingOrgMap) {
-    const { error: orgMapError } = await serviceSupabase.from('org_map').insert({
+    // RLS policy allows INSERT if user has valid invite
+    const { error: orgMapError } = await supabase.from('org_map').insert({
       id: uuidv4(),
       org_id: invite.org_id,
       user_id: userId,
@@ -331,9 +289,9 @@ export async function acceptInviteAction(inviteId: string, userId: string) {
     }
   }
 
-  // 3. Add to Group (use service role since user isn't owner yet)
+  // 4. Add to Group (RLS policy allows INSERT if user has valid invite)
   if (invite.group_id) {
-    const { data: existingGroupMap, error: groupMapCheckError } = await serviceSupabase
+    const { data: existingGroupMap, error: groupMapCheckError } = await supabase
       .from('group_map')
       .select('group_id')
       .eq('group_id', invite.group_id)
@@ -348,7 +306,7 @@ export async function acceptInviteAction(inviteId: string, userId: string) {
     }
 
     if (!existingGroupMap) {
-      const { error: groupMapError } = await serviceSupabase.from('group_map').insert({
+      const { error: groupMapError } = await supabase.from('group_map').insert({
         group_id: invite.group_id,
         user_id: userId,
         org_id: invite.org_id,
@@ -361,8 +319,8 @@ export async function acceptInviteAction(inviteId: string, userId: string) {
     }
   }
 
-  // 4. Delete Invite using service role (user may not have delete permission)
-  const { error: deleteError } = await serviceSupabase.from('invites').delete().eq('id', inviteId);
+  // 5. Delete Invite (RLS policy allows users to delete invites sent to their email)
+  const { error: deleteError } = await supabase.from('invites').delete().eq('id', inviteId);
 
   if (deleteError) {
     console.error('Error deleting invite:', deleteError);

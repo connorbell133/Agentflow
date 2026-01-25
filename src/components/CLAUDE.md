@@ -1,11 +1,11 @@
 # Component Architecture
 
-The component library for the Chat Platform application.
+The component library for the Agentflow application.
 
 ## Directory Structure References
 
 See @features/CLAUDE.md for feature-specific components
-See @common/CLAUDE.md for shared, reusable components  
+See @common/CLAUDE.md for shared, reusable components
 See @ui/CLAUDE.md for base UI primitives
 See @layout/CLAUDE.md for page layout components
 

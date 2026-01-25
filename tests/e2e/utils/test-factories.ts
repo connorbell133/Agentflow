@@ -21,12 +21,13 @@
  * ```
  */
 
-import { createSupabaseTestClient } from './supabase-test-client';
+import { createSupabaseTestClient, createAuthenticatedClient } from './supabase-test-client';
 import { randomUUID } from 'crypto';
 import type { Database } from '@/lib/supabase/types';
 import type { WorkerContext } from './worker-context';
 import type { ResourceTracker } from './resource-tracker';
 import type { TestInfo } from '@playwright/test';
+import type { Session, SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Sanitizes a test title for use in email addresses.
@@ -156,6 +157,8 @@ export interface CreateTestUserOptions {
 export interface CreateTestOrganizationOptions {
   name?: string;
   ownerId: string; // Required: who owns this org
+  /** Optional: Authenticated client with user session (required for RLS-protected operations) */
+  authenticatedClient?: SupabaseClient<Database>;
 }
 
 /**
@@ -265,13 +268,18 @@ export async function createTestUser(options: CreateTestUserOptions = {}): Promi
 /**
  * Creates a test organization in the database
  *
+ * **IMPORTANT**: With FORCE ROW LEVEL SECURITY enabled, you must provide an
+ * authenticatedClient when creating organizations. The RLS policy requires
+ * auth.uid() to match the ownerId.
+ *
  * @param options Organization creation options
  * @returns Created organization data
  */
 export async function createTestOrganization(
   options: CreateTestOrganizationOptions
 ): Promise<TestOrganization> {
-  const supabase = await createSupabaseTestClient();
+  // Use authenticated client if provided (required for RLS), otherwise fall back to service role
+  const supabase = options.authenticatedClient || (await createSupabaseTestClient());
 
   const name = options.name || generateOrgName();
 

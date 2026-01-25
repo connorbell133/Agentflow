@@ -36,10 +36,6 @@
             "integration_id": null
           },
           {
-            "context": "ci / test-e2e",
-            "integration_id": null
-          },
-          {
             "context": "ci / type-check",
             "integration_id": null
           }
