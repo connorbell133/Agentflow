@@ -11,7 +11,7 @@ export async function getUserInvites(userEmail: string) {
   const { data, error } = await supabase.from('invites').select('*').eq('invitee', userEmail);
 
   if (error) {
-    console.error('[getUserInvites] Error fetching user invites:', error);
+    console.error('Error fetching user invites:', error);
     return [];
   }
 
@@ -31,13 +31,15 @@ export async function getInviteGroup(groupId: string, inviteOrg: string) {
 
   if (error) {
     if (error.code === 'PGRST116') {
-      throw new Error('Group not found');
+      // Group not found or user doesn't have permission to view it yet
+      // Return empty array to be consistent with getInviteOrg and getInviteInviter
+      return [];
     }
     console.error('Error fetching invite group:', error);
-    throw new Error('Failed to fetch group');
+    return [];
   }
 
-  return [data];
+  return data ? [data] : [];
 }
 
 export async function getInviteOrg(org_id: string) {
