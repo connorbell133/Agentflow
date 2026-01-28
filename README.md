@@ -11,7 +11,7 @@
 [☁️ Fully Hosted Platform](https://app.agentflow.live) · [🏠 Website](https://agentflow.live) · [🚀 Self-Host Guide](#-quick-start) · [📖 Documentation](#-documentation) · [💬 Discussions](https://github.com/your-org/chat-platform/discussions) · [🐛 Issues](https://github.com/your-org/chat-platform/issues)
 
 <p align="center">
-  <img src="./docs/images/architecture.png" alt="AgentFlow Architecture" width="100%">
+<img width="1600" height="928" alt="image" src="https://github.com/user-attachments/assets/0012c929-28d3-44b5-be53-81bd02d115f5" />
 </p>
 
 ---
